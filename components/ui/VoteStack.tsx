@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useCurrentUser } from "@/lib/user-context";
 import clsx from "clsx";
 
 interface VoteStackProps {
@@ -20,6 +21,7 @@ export function VoteStack({
   disabled,
   onVote,
 }: VoteStackProps) {
+  const { requireName } = useCurrentUser();
   const [localVote, setLocalVote] = useState<"up" | "down" | null>(userVote ?? null);
   const [localUp, setLocalUp] = useState(upvotes);
   const [localDown, setLocalDown] = useState(downvotes);
@@ -28,6 +30,14 @@ export function VoteStack({
   async function handleVote(dir: "up" | "down") {
     if (loading || disabled) return;
     setLoading(true);
+
+    const hasName = await requireName(
+      "Tell us your name or username before your vote is saved."
+    );
+    if (!hasName) {
+      setLoading(false);
+      return;
+    }
 
     const prev = localVote;
     if (prev === dir) {
@@ -45,11 +55,12 @@ export function VoteStack({
     try {
       if (onVote) await onVote(clusterId, dir);
       else {
-        await fetch("/api/votes", {
+        const res = await fetch("/api/votes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ clusterId, direction: dir }),
         });
+        if (!res.ok) throw new Error("Vote was not saved.");
       }
     } catch {
       setLocalVote(prev);

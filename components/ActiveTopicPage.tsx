@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { TopicHero } from "@/components/TopicHero";
 import { ClusterCard } from "@/components/ClusterCard";
 import { useLocale } from "@/lib/locale-context";
+import { useCurrentUser } from "@/lib/user-context";
 import Link from "next/link";
 import { Btn } from "@/components/ui/Btn";
 
@@ -33,6 +34,7 @@ interface Topic {
 
 export function ActiveTopicPage() {
   const { msgs } = useLocale();
+  const { requireName } = useCurrentUser();
   const [topic, setTopic] = useState<Topic | null>(null);
   const [loading, setLoading] = useState(true);
   const [focusedIdx, setFocusedIdx] = useState(-1);
@@ -51,10 +53,15 @@ export function ActiveTopicPage() {
   }, []);
 
   useEffect(() => {
-    fetchTopic();
+    const timer = window.setTimeout(() => {
+      void fetchTopic();
+    }, 0);
     // Poll every 10s while topic is live
     const interval = setInterval(fetchTopic, 10000);
-    return () => clearInterval(interval);
+    return () => {
+      window.clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [fetchTopic]);
 
   if (loading) {
@@ -91,7 +98,7 @@ export function ActiveTopicPage() {
     );
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent, idx: number) => {
+  const handleKeyDown = async (e: React.KeyboardEvent, idx: number) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setFocusedIdx(Math.min(idx + 1, topic.clusters.length - 1));
@@ -103,6 +110,10 @@ export function ActiveTopicPage() {
       // Trigger upvote on space
       const cluster = topic.clusters[idx];
       if (cluster) {
+        const hasName = await requireName(
+          "Tell us your name or username before your vote is saved."
+        );
+        if (!hasName) return;
         fetch("/api/votes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -49,15 +49,30 @@ export async function PATCH(req: Request) {
     );
   }
 
+  const current = await db.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
+  const displayName =
+    parsed.data.displayName === null || parsed.data.displayName === undefined
+      ? null
+      : parsed.data.displayName;
+
   const updated = await db.user.update({
     where: { id: userId },
     data: {
-      displayName:
-        parsed.data.displayName === null || parsed.data.displayName === undefined
-          ? null
-          : parsed.data.displayName,
+      displayName,
+      isAnon: current?.email ? false : displayName === null,
     },
   });
 
-  return Response.json({ user: publicUser(updated) });
+  const res = Response.json({ user: publicUser(updated) });
+  const c = await cookies();
+  if (!c.get("voices_session") && c.get(ANON_COOKIE)?.value !== userId) {
+    res.headers.append(
+      "Set-Cookie",
+      `${ANON_COOKIE}=${userId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000`
+    );
+  }
+  return res;
 }

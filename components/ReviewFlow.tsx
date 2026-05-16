@@ -8,7 +8,6 @@ import { Btn } from "@/components/ui/Btn";
 import { ConfidenceChip } from "@/components/ui/ConfidenceChip";
 import { Pill } from "@/components/ui/Pill";
 import { Icon } from "@/components/ui/Icon";
-import { Avatar } from "@/components/Avatar";
 import clsx from "clsx";
 
 interface TakeData {
@@ -43,7 +42,7 @@ interface ClusterInfo {
 
 export function ReviewFlow() {
   const { msgs } = useLocale();
-  const { user: currentUser } = useCurrentUser();
+  const { user: currentUser, requireName, openEditor } = useCurrentUser();
   const searchParams = useSearchParams();
   const router = useRouter();
   const takeId = searchParams.get("takeId");
@@ -55,14 +54,8 @@ export function ReviewFlow() {
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
   const [showNewCluster, setShowNewCluster] = useState(false);
   const [newLabel, setNewLabel] = useState("");
-  const [isAnon, setIsAnon] = useState(true);
-  // Default the toggle based on whether the user has picked a name. They can
-  // still flip it manually; once they do, that choice sticks for this session.
-  const [identityTouched, setIdentityTouched] = useState(false);
-  useEffect(() => {
-    if (identityTouched) return;
-    setIsAnon(!currentUser?.displayName);
-  }, [currentUser?.displayName, identityTouched]);
+  const [manualIsAnon, setManualIsAnon] = useState<boolean | null>(null);
+  const isAnon = manualIsAnon ?? !currentUser?.displayName;
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState<{ published: boolean; pending?: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -123,12 +116,23 @@ export function ReviewFlow() {
 
   async function handleConfirm() {
     if (!takeId || !take) return;
+
+    let publishAnon = isAnon;
+    if (!currentUser?.displayName?.trim()) {
+      const hasName = await requireName(
+        "Before saving your review, tell us the name or username that should be attached to your activity."
+      );
+      if (!hasName) return;
+      publishAnon = false;
+      setManualIsAnon(false);
+    }
+
     setSubmitting(true);
     setError(null);
 
     const body: Record<string, unknown> = {
       content,
-      isAnon,
+      isAnon: publishAnon,
     };
 
     if (showNewCluster && newLabel.trim()) {
@@ -151,7 +155,7 @@ export function ReviewFlow() {
       return;
     }
     if (!res.ok) {
-      setError(msgs.errors.generic);
+      setError(data.error || msgs.errors.generic);
       return;
     }
 
@@ -366,54 +370,55 @@ export function ReviewFlow() {
 
       {/* Identity */}
       <section className="voices-card p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <Avatar size="md" />
-            <div className="min-w-0">
-              <span className="voices-eyebrow">PUBLISHING AS</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="min-w-0">
+            <span className="voices-eyebrow">PUBLISHING AS</span>
+            <p
+              className="mt-1 text-[15px] font-semibold text-[var(--ink)] bn-text truncate"
+              style={{ fontFamily: "Hind Siliguri, Plus Jakarta Sans, sans-serif" }}
+            >
+              {isAnon ? "Anonymous" : currentUser?.displayName || "Name needed"}
+            </p>
+            {!currentUser?.displayName && (
               <p
-                className="mt-1 text-[15px] font-semibold text-[var(--ink)] bn-text truncate"
-                style={{ fontFamily: "Hind Siliguri, Plus Jakarta Sans, sans-serif" }}
+                className="text-[12px] text-[var(--muted)] mt-0.5"
+                style={{ fontFamily: "Hind Siliguri, sans-serif" }}
               >
-                {isAnon ? "Anonymous" : currentUser?.displayName || "Anonymous"}
+                Your name will be requested before this review is saved.
               </p>
-              {!currentUser?.displayName && (
-                <p
-                  className="text-[12px] text-[var(--muted)] mt-0.5"
-                  style={{ fontFamily: "Hind Siliguri, sans-serif" }}
-                >
-                  Tap the circle to set a name.
-                </p>
-              )}
-            </div>
+            )}
           </div>
 
-          <label className="flex items-center cursor-pointer shrink-0">
-            <input
-              type="checkbox"
-              checked={isAnon}
-              onChange={(e) => {
-                setIdentityTouched(true);
-                setIsAnon(e.target.checked);
-              }}
-              disabled={!currentUser?.displayName}
-              className="sr-only peer"
-            />
-            <span
-              className={clsx(
-                "relative w-10 h-6 rounded-full transition-colors",
-                "peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--accent)] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--paper)]",
-                !currentUser?.displayName && "opacity-40 cursor-not-allowed"
-              )}
-              style={{ backgroundColor: isAnon ? "var(--accent)" : "var(--hairline)" }}
-              aria-label="Toggle anonymous publishing"
-            >
-              <span
-                className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform"
-                style={{ transform: isAnon ? "translateX(16px)" : "translateX(0)" }}
+          <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 w-full sm:w-auto">
+            <Btn variant="ghost" size="sm" onClick={openEditor}>
+              {currentUser?.displayName ? "Change" : "Add name"}
+            </Btn>
+            <label className="flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={isAnon}
+                onChange={(e) => {
+                  setManualIsAnon(e.target.checked);
+                }}
+                disabled={!currentUser?.displayName}
+                className="sr-only peer"
               />
-            </span>
-          </label>
+              <span
+                className={clsx(
+                  "relative w-10 h-6 rounded-full transition-colors",
+                  "peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--accent)] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--paper)]",
+                  !currentUser?.displayName && "opacity-40 cursor-not-allowed"
+                )}
+                style={{ backgroundColor: isAnon ? "var(--accent)" : "var(--hairline)" }}
+                aria-label="Toggle anonymous publishing"
+              >
+                <span
+                  className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform"
+                  style={{ transform: isAnon ? "translateX(16px)" : "translateX(0)" }}
+                />
+              </span>
+            </label>
+          </div>
         </div>
         <p
           className="mt-3 text-[12px] text-[var(--muted)]"
@@ -421,7 +426,7 @@ export function ReviewFlow() {
         >
           {isAnon
             ? "Your take will appear under «Anonymous»."
-            : `Your take will appear under «${currentUser?.displayName}».`}
+            : `Your take will appear under «${currentUser?.displayName ?? "your name"}».`}
         </p>
       </section>
 

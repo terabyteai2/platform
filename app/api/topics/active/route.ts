@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { getOrCreateUser, setAnonCookie } from "@/lib/auth";
+import { getOrCreateUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 

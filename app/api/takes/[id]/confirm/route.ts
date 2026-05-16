@@ -20,19 +20,26 @@ export async function POST(
 
   const take = await db.take.findUnique({
     where: { id },
-    include: { topic: true },
+    include: {
+      topic: true,
+      user: { select: { displayName: true } },
+    },
   });
 
   if (!take) return Response.json({ error: "Not found" }, { status: 404 });
   if (take.userId !== userId) return Response.json({ error: "Forbidden" }, { status: 403 });
   if (take.isPublished) return Response.json({ error: "Already published" }, { status: 409 });
   if (take.topic.status !== "live") return Response.json({ error: "Topic not live" }, { status: 403 });
+  if (!take.user.displayName?.trim()) {
+    return Response.json({ error: "Name required before saving a review" }, { status: 400 });
+  }
 
   const body = await req.json();
   const parsed = schema.safeParse(body);
   if (!parsed.success) return Response.json({ error: "Invalid input" }, { status: 400 });
 
   const { content, clusterId, newClusterLabel, newClusterSummary, isAnon } = parsed.data;
+  const publishAnon = isAnon ?? false;
 
   // Moderation
   const modResult = await moderateTake(id, content);
@@ -81,7 +88,7 @@ export async function POST(
         data: {
           content,
           clusterId: finalClusterId,
-          isAnon: isAnon ?? take.isAnon,
+          isAnon: publishAnon,
           isPending: true,
           isPublished: false,
         },
@@ -101,7 +108,7 @@ export async function POST(
     data: {
       content,
       clusterId: finalClusterId,
-      isAnon: isAnon ?? take.isAnon,
+      isAnon: publishAnon,
       isPending: false,
       isPublished: true,
     },

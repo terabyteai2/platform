@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLocale } from "@/lib/locale-context";
+import { useCurrentUser } from "@/lib/user-context";
 import { Btn } from "@/components/ui/Btn";
 import { Pill } from "@/components/ui/Pill";
 import { Icon } from "@/components/ui/Icon";
@@ -79,6 +80,7 @@ function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
 
 export function RecordFlow() {
   const { locale, msgs } = useLocale();
+  const { requireName } = useCurrentUser();
   const searchParams = useSearchParams();
   const router = useRouter();
   const queryTopicId = searchParams.get("topicId");
@@ -672,6 +674,12 @@ export function RecordFlow() {
       return;
     }
     setSubmitError(null);
+
+    const hasName = await requireName(
+      "Before saving your review, tell us the name or username that should be attached to your activity."
+    );
+    if (!hasName) return;
+
     setStep("processing");
 
     const clusterIdForServer =

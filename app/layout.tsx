@@ -3,6 +3,7 @@ import "./globals.css";
 import { LocaleProvider } from "@/lib/locale-context";
 import { UserProvider } from "@/lib/user-context";
 import { Navbar } from "@/components/Navbar";
+import { FloatingAvatar } from "@/components/Avatar";
 
 export const metadata: Metadata = {
   title: "Voices — সাপ্তাহিক বাংলা মতামত",
@@ -62,6 +63,7 @@ export default function RootLayout({
                 </span>
               </div>
             </footer>
+            <FloatingAvatar />
           </UserProvider>
         </LocaleProvider>
       </body>

@@ -107,25 +107,37 @@ function RobotMicAvatar({ size, active, initials, listening }: RobotMicAvatarPro
 }
 
 interface AvatarProps {
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
   /** If true, no popover — purely decorative (e.g. inside cards). */
   readOnly?: boolean;
+  placement?: "top" | "bottom";
 }
 
-export function Avatar({ size = "md", readOnly = false }: AvatarProps) {
-  const { user, updateName } = useCurrentUser();
-  const [open, setOpen] = useState(false);
+export function Avatar({ size = "md", readOnly = false, placement = "bottom" }: AvatarProps) {
+  const {
+    user,
+    updateName,
+    prompt,
+    resolvePrompt,
+    openEditor,
+    editorOpen,
+    setEditorOpen,
+  } = useCurrentUser();
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const open = !readOnly && editorOpen;
+  const hasPrompt = !!prompt;
 
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+    const timer = window.setTimeout(() => {
       setDraft(user?.displayName ?? "");
       setError(null);
-    }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [open, user?.displayName]);
 
   // Click-outside / Escape to close
@@ -134,10 +146,14 @@ export function Avatar({ size = "md", readOnly = false }: AvatarProps) {
     function onDown(e: MouseEvent) {
       const t = e.target as Node;
       if (popoverRef.current?.contains(t) || buttonRef.current?.contains(t)) return;
-      setOpen(false);
+      if (hasPrompt) resolvePrompt(false);
+      else setEditorOpen(false);
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        if (hasPrompt) resolvePrompt(false);
+        else setEditorOpen(false);
+      }
     }
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
@@ -145,10 +161,15 @@ export function Avatar({ size = "md", readOnly = false }: AvatarProps) {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [hasPrompt, open, resolvePrompt, setEditorOpen]);
 
   async function save() {
     const trimmed = draft.trim();
+    if (hasPrompt && trimmed === "") {
+      setError("Please add your name to continue.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
     const res = await updateName(trimmed === "" ? null : trimmed);
@@ -157,7 +178,8 @@ export function Avatar({ size = "md", readOnly = false }: AvatarProps) {
       setError(res.error);
       return;
     }
-    setOpen(false);
+    if (hasPrompt) resolvePrompt(true);
+    else setEditorOpen(false);
   }
 
   async function clearName() {
@@ -169,29 +191,34 @@ export function Avatar({ size = "md", readOnly = false }: AvatarProps) {
       setError(res.error);
       return;
     }
-    setOpen(false);
+    setEditorOpen(false);
   }
 
   const initials = initialsFor(user?.displayName);
   const hasName = !!user?.displayName;
-  const px = size === "sm" ? 32 : 40;
-  const wrapperSize = size === "sm" ? "w-8 h-8" : "w-10 h-10";
+  const px = size === "sm" ? 32 : size === "lg" ? 48 : 40;
+  const wrapperSize = size === "sm" ? "w-8 h-8" : size === "lg" ? "w-14 h-14" : "w-10 h-10";
 
   const button = (
     <button
       ref={buttonRef}
       type="button"
-      onClick={() => !readOnly && setOpen((v) => !v)}
+      onClick={() => {
+        if (readOnly) return;
+        if (hasPrompt) return;
+        if (editorOpen && !hasPrompt) setEditorOpen(false);
+        else openEditor();
+      }}
       disabled={readOnly}
       suppressHydrationWarning
       aria-label={hasName ? `Signed in as ${user!.displayName}` : "Set your name"}
       className={clsx(
         "shrink-0 flex items-center justify-center transition-transform",
         wrapperSize,
-        !readOnly && "hover:scale-[1.06] active:scale-95 cursor-pointer",
+        !readOnly && "rounded-full border border-[var(--hairline)] bg-[var(--surface)] shadow-[0_12px_36px_-18px_rgba(20,17,13,0.5)] hover:scale-[1.06] active:scale-95 cursor-pointer",
         readOnly && "cursor-default"
       )}
-      style={{ background: "transparent", border: "none", padding: 0 }}
+      style={readOnly ? { background: "transparent", border: "none", padding: 0 } : { padding: 0 }}
     >
       <RobotMicAvatar
         size={px}
@@ -210,20 +237,23 @@ export function Avatar({ size = "md", readOnly = false }: AvatarProps) {
       {open && (
         <div
           ref={popoverRef}
-          className="absolute right-0 mt-2 w-72 voices-card p-4 z-50"
+          className={clsx(
+            "absolute right-0 w-72 voices-card p-4 z-50",
+            placement === "top" ? "bottom-full mb-3" : "mt-2"
+          )}
           style={{
             boxShadow:
               "0 1px 0 var(--hairline), 0 12px 32px -16px rgba(20,17,13,0.25)",
           }}
         >
           <span className="voices-eyebrow">
-            {hasName ? "YOUR NAME" : "ADD YOUR NAME"}
+            {hasPrompt ? "NAME REQUIRED" : hasName ? "YOUR NAME" : "ADD YOUR NAME"}
           </span>
           <p
             className="mt-2 text-[13px] text-[var(--muted)] leading-snug bn-text"
             style={{ fontFamily: "Hind Siliguri, sans-serif" }}
           >
-            Choose how you want to appear. Leave blank to stay anonymous.
+            {prompt?.message ?? "Choose how you want to appear. Leave blank to stay anonymous."}
           </p>
           <input
             type="text"
@@ -247,16 +277,27 @@ export function Avatar({ size = "md", readOnly = false }: AvatarProps) {
             </p>
           )}
           <div className="mt-3 flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={clearName}
-              disabled={saving || !hasName}
-              className="voices-eyebrow hover:text-[var(--ink)] disabled:opacity-30 transition-colors"
-            >
-              {hasName ? "GO ANONYMOUS" : "ANONYMOUS"}
-            </button>
+            {hasPrompt ? (
+              <span className="voices-eyebrow">SAVED TO YOUR PROFILE</span>
+            ) : (
+              <button
+                type="button"
+                onClick={clearName}
+                disabled={saving || !hasName}
+                className="voices-eyebrow hover:text-[var(--ink)] disabled:opacity-30 transition-colors"
+              >
+                {hasName ? "GO ANONYMOUS" : "ANONYMOUS"}
+              </button>
+            )}
             <div className="flex items-center gap-2">
-              <Btn variant="ghost" size="sm" onClick={() => setOpen(false)}>
+              <Btn
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (hasPrompt) resolvePrompt(false);
+                  else setEditorOpen(false);
+                }}
+              >
                 Cancel
               </Btn>
               <Btn variant="accent" size="sm" onClick={save} loading={saving}>
@@ -266,6 +307,14 @@ export function Avatar({ size = "md", readOnly = false }: AvatarProps) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+export function FloatingAvatar() {
+  return (
+    <div className="fixed right-4 bottom-4 sm:right-6 sm:bottom-6 z-[70]">
+      <Avatar size="lg" placement="top" />
     </div>
   );
 }

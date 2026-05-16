@@ -53,7 +53,10 @@ export function PastPage() {
   }
 
   useEffect(() => {
-    load(cat, null, true);
+    const timer = window.setTimeout(() => {
+      void load(cat, null, true);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [cat]);
 
   return (

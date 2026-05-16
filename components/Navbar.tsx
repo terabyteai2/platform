@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useLocale } from "@/lib/locale-context";
-import { Avatar } from "@/components/Avatar";
 
 export function Navbar() {
   const { locale, msgs, setLocale } = useLocale();
@@ -80,11 +79,6 @@ export function Navbar() {
           >
             {locale === "bn" ? "EN" : "বাং"}
           </button>
-
-          {/* User avatar — opens name editor */}
-          <div className="ml-1">
-            <Avatar size="md" />
-          </div>
         </div>
       </div>
     </nav>
