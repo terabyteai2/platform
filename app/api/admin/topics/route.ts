@@ -30,6 +30,18 @@ export async function POST(req: Request) {
       closesAt: new Date(parsed.data.closesAt),
       status: "draft",
     },
+    select: {
+      id: true,
+      week: true,
+      category: true,
+      question: true,
+      questionEn: true,
+      context: true,
+      opensAt: true,
+      closesAt: true,
+      status: true,
+      createdAt: true,
+    },
   });
 
   return Response.json({ topic }, { status: 201 });
@@ -42,7 +54,17 @@ export async function GET() {
 
   const topics = await db.topic.findMany({
     orderBy: { week: "desc" },
-    include: {
+    select: {
+      id: true,
+      week: true,
+      category: true,
+      question: true,
+      questionEn: true,
+      context: true,
+      opensAt: true,
+      closesAt: true,
+      status: true,
+      createdAt: true,
       _count: { select: { takes: true, clusters: true } },
     },
   });

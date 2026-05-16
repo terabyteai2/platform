@@ -72,6 +72,13 @@ model Topic {
   question        String        @db.VarChar(200)
   questionEn      String?       @db.VarChar(200)
   context         String?       @db.Text
+  imageUrl        String?       @db.Text
+  imageAlt        String?       @db.VarChar(240)
+  imageSource     String?       @db.VarChar(40)
+  imageCreditName String?       @db.VarChar(120)
+  imageCreditUrl  String?       @db.VarChar(500)
+  imageProviderId String?       @db.VarChar(120)
+  imageColor      String?       @db.VarChar(24)
   opensAt         DateTime
   closesAt        DateTime
   status          TopicStatus   @default(draft)

@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { topicImagesByIds } from "@/lib/topic-image";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,18 @@ export async function GET(
 
   const topic = await db.topic.findUnique({
     where: { id },
-    include: {
+    select: {
+      id: true,
+      week: true,
+      category: true,
+      question: true,
+      questionEn: true,
+      context: true,
+      opensAt: true,
+      closesAt: true,
+      status: true,
+      createdByUserId: true,
+      createdAt: true,
       clusters: {
         where: { isMerged: false },
         orderBy: { order: "asc" },
@@ -32,6 +44,8 @@ export async function GET(
     return Response.json({ error: "Not found" }, { status: 404 });
   }
 
+  const imageMap = await topicImagesByIds([topic.id]);
+
   return Response.json({
     topic: {
       ...topic,
@@ -45,6 +59,7 @@ export async function GET(
         sampleTakes: c.takes,
       })),
       totalTakes: topic._count.takes,
+      image: imageMap[topic.id] ?? null,
     },
   });
 }

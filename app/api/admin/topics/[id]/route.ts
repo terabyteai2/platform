@@ -27,6 +27,21 @@ export async function PATCH(
   if (data.opensAt) data.opensAt = new Date(data.opensAt as string);
   if (data.closesAt) data.closesAt = new Date(data.closesAt as string);
 
-  const topic = await db.topic.update({ where: { id }, data });
+  const topic = await db.topic.update({
+    where: { id },
+    data,
+    select: {
+      id: true,
+      week: true,
+      category: true,
+      question: true,
+      questionEn: true,
+      context: true,
+      opensAt: true,
+      closesAt: true,
+      status: true,
+      createdAt: true,
+    },
+  });
   return Response.json({ topic });
 }

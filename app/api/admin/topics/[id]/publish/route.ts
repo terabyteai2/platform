@@ -28,6 +28,18 @@ export async function POST(
   const topic = await db.topic.update({
     where: { id },
     data: { status: parsed.data.status },
+    select: {
+      id: true,
+      week: true,
+      category: true,
+      question: true,
+      questionEn: true,
+      context: true,
+      opensAt: true,
+      closesAt: true,
+      status: true,
+      createdAt: true,
+    },
   });
 
   return Response.json({ topic });

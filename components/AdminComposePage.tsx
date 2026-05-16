@@ -12,6 +12,15 @@ interface ClusterDraft {
   summary: string;
 }
 
+interface TopicImage {
+  url: string;
+  alt: string;
+  source: string;
+  creditName?: string | null;
+  creditUrl?: string | null;
+  color?: string | null;
+}
+
 const CATEGORY_OPTIONS = [
   { value: "society", label: "সমাজ / Society" },
   { value: "work", label: "কাজ / Work" },
@@ -35,11 +44,86 @@ export function AdminComposePage() {
   const [topicId, setTopicId] = useState<string | null>(null);
   const [clusters, setClusters] = useState<ClusterDraft[]>([]);
   const [editingCluster, setEditingCluster] = useState<number | null>(null);
+  const [image, setImage] = useState<TopicImage | null>(null);
+  const [manualImage, setManualImage] = useState({
+    imageUrl: "",
+    imageAlt: "",
+    imageCreditName: "",
+    imageCreditUrl: "",
+  });
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  function applyImage(next: TopicImage | null) {
+    setImage(next);
+    setManualImage({
+      imageUrl: next?.url ?? "",
+      imageAlt: next?.alt ?? "",
+      imageCreditName: next?.creditName ?? "",
+      imageCreditUrl: next?.creditUrl ?? "",
+    });
+  }
+
+  async function requestAutoImage(idOverride?: string) {
+    const id = idOverride ?? topicId;
+    if (!id) return;
+
+    setImageLoading(true);
+    setImageError(null);
+    const res = await fetch(`/api/admin/topics/${id}/image`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "auto" }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setImageLoading(false);
+
+    if (!res.ok) {
+      setImageError("ছবি নির্বাচন করতে ব্যর্থ হয়েছে।");
+      return;
+    }
+
+    if (data.image) {
+      applyImage(data.image);
+      setSuccess("প্রাসঙ্গিক ছবি যোগ হয়েছে।");
+      return;
+    }
+
+    setImageError(data.warning ?? "কোনো ছবি পাওয়া যায়নি।");
+  }
+
+  async function handleManualImageSave() {
+    if (!topicId) return;
+
+    setImageLoading(true);
+    setImageError(null);
+    const res = await fetch(`/api/admin/topics/${topicId}/image`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "manual",
+        imageUrl: manualImage.imageUrl,
+        imageAlt: manualImage.imageAlt,
+        imageCreditName: manualImage.imageCreditName || undefined,
+        imageCreditUrl: manualImage.imageCreditUrl || undefined,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setImageLoading(false);
+
+    if (!res.ok) {
+      setImageError("ম্যানুয়াল ছবি সংরক্ষণ করতে ব্যর্থ হয়েছে।");
+      return;
+    }
+
+    applyImage(data.image);
+    setSuccess("ছবি সংরক্ষিত হয়েছে।");
+  }
 
   async function handleSaveDraft() {
     setSaving(true);
@@ -64,6 +148,7 @@ export function AdminComposePage() {
 
     setTopicId(data.topic.id);
     setSuccess("খসড়া সংরক্ষিত হয়েছে।");
+    void requestAutoImage(data.topic.id);
   }
 
   async function handleSeed() {
@@ -296,6 +381,134 @@ export function AdminComposePage() {
 
         {/* Right: cluster preview (2/5) */}
         <div className="lg:col-span-2 space-y-5">
+          {topicId && (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <span className="voices-eyebrow">TOPIC IMAGE</span>
+                  <hr className="voices-rule-soft mt-1.5" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void requestAutoImage()}
+                  disabled={imageLoading}
+                  className="voices-eyebrow hover:text-[var(--ink)] disabled:opacity-40 transition-colors inline-flex items-center gap-1"
+                >
+                  <Icon.Sparkle size={10} sw={2.4} />
+                  {imageLoading ? "LOADING" : "REGENERATE"}
+                </button>
+              </div>
+
+              <div className="voices-card overflow-hidden">
+                {image ? (
+                  <div
+                    className="aspect-[16/9] bg-[var(--surface-soft)] border-b"
+                    style={{
+                      borderColor: "var(--hairline-soft)",
+                      backgroundColor: image.color ?? "var(--surface-soft)",
+                    }}
+                  >
+                    <img
+                      src={image.url}
+                      alt={image.alt}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="aspect-[16/9] flex items-center justify-center bg-[var(--surface-soft)] border-b"
+                    style={{ borderColor: "var(--hairline-soft)" }}
+                  >
+                    <Icon.Sparkle size={20} color="var(--muted)" sw={1.8} />
+                  </div>
+                )}
+                <div className="p-4 space-y-1.5">
+                  <span className="voices-eyebrow">
+                    {image ? image.source.toUpperCase() : "NO IMAGE YET"}
+                  </span>
+                  {image?.creditName && (
+                    <p
+                      className="text-[12px] text-[var(--muted)]"
+                      style={{ fontFamily: "Hind Siliguri, sans-serif" }}
+                    >
+                      Credit:{" "}
+                      {image.creditUrl ? (
+                        <a
+                          href={image.creditUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+                        >
+                          {image.creditName}
+                        </a>
+                      ) : (
+                        image.creditName
+                      )}
+                    </p>
+                  )}
+                  {imageError && (
+                    <p className="text-[12px]" style={{ color: "var(--warn)" }}>
+                      {imageError}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <input
+                  type="url"
+                  value={manualImage.imageUrl}
+                  onChange={(e) =>
+                    setManualImage((prev) => ({ ...prev, imageUrl: e.target.value }))
+                  }
+                  className={clsx(inputClass, "text-xs")}
+                  placeholder="https://... image URL"
+                />
+                <input
+                  type="text"
+                  value={manualImage.imageAlt}
+                  onChange={(e) =>
+                    setManualImage((prev) => ({ ...prev, imageAlt: e.target.value }))
+                  }
+                  className={clsx(inputClass, "text-xs")}
+                  placeholder="Alt text"
+                  maxLength={240}
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={manualImage.imageCreditName}
+                    onChange={(e) =>
+                      setManualImage((prev) => ({ ...prev, imageCreditName: e.target.value }))
+                    }
+                    className={clsx(inputClass, "text-xs")}
+                    placeholder="Credit name"
+                    maxLength={120}
+                  />
+                  <input
+                    type="url"
+                    value={manualImage.imageCreditUrl}
+                    onChange={(e) =>
+                      setManualImage((prev) => ({ ...prev, imageCreditUrl: e.target.value }))
+                    }
+                    className={clsx(inputClass, "text-xs")}
+                    placeholder="Credit URL"
+                  />
+                </div>
+                <Btn
+                  onClick={handleManualImageSave}
+                  loading={imageLoading}
+                  disabled={!manualImage.imageUrl.trim() || !manualImage.imageAlt.trim()}
+                  variant="secondary"
+                  size="sm"
+                  fullWidth
+                >
+                  Save image
+                </Btn>
+              </div>
+            </section>
+          )}
+
           <div>
             <span className="voices-eyebrow">CLUSTERS · {clusters.length.toString().padStart(2, "0")}</span>
             <hr className="voices-rule-soft mt-1.5" />

@@ -12,6 +12,14 @@ interface TopicHeroProps {
   question: string;
   questionEn?: string | null;
   context?: string | null;
+  image?: {
+    url: string;
+    alt: string;
+    source: string;
+    creditName?: string | null;
+    creditUrl?: string | null;
+    color?: string | null;
+  } | null;
   closesAt: string;
   status: string;
   totalTakes: number;
@@ -24,6 +32,7 @@ export function TopicHero({
   question,
   questionEn,
   context,
+  image,
   closesAt,
   status,
   totalTakes,
@@ -47,6 +56,58 @@ export function TopicHero({
 
   return (
     <section className="pt-12 pb-8 px-4 sm:px-6 max-w-3xl mx-auto">
+      {image && (
+        <figure className="mb-8">
+          <div
+            className="relative aspect-[16/9] overflow-hidden rounded-[10px] border bg-[var(--surface-soft)]"
+            style={{
+              borderColor: "var(--hairline)",
+              backgroundColor: image.color ?? "var(--surface-soft)",
+            }}
+          >
+            <img
+              src={image.url}
+              alt={image.alt}
+              className="h-full w-full object-cover"
+              loading="eager"
+            />
+          </div>
+          {(image.creditName || image.source) && (
+            <figcaption className="mt-2 voices-eyebrow normal-case tracking-normal">
+              {image.creditUrl ? (
+                <>
+                  Photo by{" "}
+                  <a
+                    href={image.creditUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+                  >
+                    {image.creditName}
+                  </a>
+                  {image.source === "unsplash" && (
+                    <>
+                      {" "}
+                      on{" "}
+                      <a
+                        href="https://unsplash.com/?utm_source=voices_discussion_platform&utm_medium=referral"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+                      >
+                        Unsplash
+                      </a>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>Image: {image.creditName ?? image.source}</>
+              )}
+            </figcaption>
+          )}
+        </figure>
+      )}
+
       {/* Eyebrow row */}
       <div className="flex items-center gap-2 mb-6 flex-wrap">
         <Pill variant="default">

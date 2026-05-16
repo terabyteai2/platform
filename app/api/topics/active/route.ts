@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getOrCreateUser } from "@/lib/auth";
+import { topicImagesByIds } from "@/lib/topic-image";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,16 @@ export async function GET() {
   const topic = await db.topic.findFirst({
     where: { status: "live" },
     orderBy: { week: "desc" },
-    include: {
+    select: {
+      id: true,
+      week: true,
+      category: true,
+      question: true,
+      questionEn: true,
+      context: true,
+      opensAt: true,
+      closesAt: true,
+      status: true,
       clusters: {
         where: { isMerged: false },
         orderBy: { order: "asc" },
@@ -55,6 +65,7 @@ export async function GET() {
     })),
     userVote: voteMap[c.id] ?? null,
   }));
+  const imageMap = await topicImagesByIds([topic.id]);
 
   const headers: Record<string, string> = {};
   if (isAnon) {
@@ -74,6 +85,7 @@ export async function GET() {
         closesAt: topic.closesAt,
         status: topic.status,
         totalTakes: topic._count.takes,
+        image: imageMap[topic.id] ?? null,
         clusters,
       },
       userId,

@@ -19,6 +19,14 @@ interface TopicData {
   id: string;
   question: string;
   questionEn?: string | null;
+  image?: {
+    url: string;
+    alt: string;
+    source: string;
+    creditName?: string | null;
+    creditUrl?: string | null;
+    color?: string | null;
+  } | null;
   clusters: Cluster[];
 }
 
@@ -809,6 +817,58 @@ export function RecordFlow() {
     <div className="max-w-xl mx-auto px-4 sm:px-6 pt-10 pb-16">
       {/* Topic context */}
       <div className="mb-8">
+        {topic.image && (
+          <figure className="mb-6">
+            <div
+              className="aspect-[16/9] overflow-hidden rounded-[10px] border bg-[var(--surface-soft)]"
+              style={{
+                borderColor: "var(--hairline)",
+                backgroundColor: topic.image.color ?? "var(--surface-soft)",
+              }}
+            >
+              <img
+                src={topic.image.url}
+                alt={topic.image.alt}
+                className="h-full w-full object-cover"
+                loading="eager"
+              />
+            </div>
+            {(topic.image.creditName || topic.image.source) && (
+              <figcaption className="mt-2 voices-eyebrow normal-case tracking-normal">
+                {topic.image.creditUrl ? (
+                  <>
+                    Photo by{" "}
+                    <a
+                      href={topic.image.creditUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+                    >
+                      {topic.image.creditName}
+                    </a>
+                    {topic.image.source === "unsplash" && (
+                      <>
+                        {" "}
+                        on{" "}
+                        <a
+                          href="https://unsplash.com/?utm_source=voices_discussion_platform&utm_medium=referral"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+                        >
+                          Unsplash
+                        </a>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>Image: {topic.image.creditName ?? topic.image.source}</>
+                )}
+              </figcaption>
+            )}
+          </figure>
+        )}
+
         <span className="voices-eyebrow">THIS WEEK&apos;S QUESTION</span>
         <p
           className="mt-3 voices-display-bn text-2xl sm:text-3xl text-[var(--ink)]"

@@ -9,7 +9,10 @@ export async function POST(
   if (!(await isAdmin())) return Response.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
-  const topic = await db.topic.findUnique({ where: { id } });
+  const topic = await db.topic.findUnique({
+    where: { id },
+    select: { question: true, context: true },
+  });
   if (!topic) return Response.json({ error: "Not found" }, { status: 404 });
 
   const drafts = await seedClusters(id, topic.question, topic.context);

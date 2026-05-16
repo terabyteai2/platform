@@ -17,6 +17,7 @@ const ENDPOINT = `https://${process.env.B2_ENDPOINT}`;
 // "local:" so getSignedDownloadUrl knows which branch to take.
 const LOCAL_PREFIX = "local:";
 const LOCAL_DIR = path.join(process.cwd(), "public", "uploads", "takes");
+const LOCAL_UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
 
 function isConnectivityError(err: unknown): boolean {
   if (!err || typeof err !== "object") return false;
@@ -46,11 +47,54 @@ export function isLocalPath(p: string): boolean {
   return p.startsWith(LOCAL_PREFIX);
 }
 
+async function writeLocalObject(key: string, body: Uint8Array | Buffer): Promise<void> {
+  const filePath = path.join(LOCAL_UPLOADS_DIR, key);
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, body);
+}
+
 async function writeLocal(takeId: string, body: Uint8Array | Buffer): Promise<string> {
   await fs.mkdir(LOCAL_DIR, { recursive: true });
-  const filePath = path.join(LOCAL_DIR, `${takeId}.webm`);
-  await fs.writeFile(filePath, body);
+  await writeLocalObject(`takes/${takeId}.webm`, body);
   return `${LOCAL_PREFIX}takes/${takeId}.webm`;
+}
+
+export async function uploadPublicAsset(
+  key: string,
+  body: Uint8Array | Buffer,
+  contentType: string
+): Promise<string> {
+  const safeKey = key.replace(/^\/+/, "");
+  const forceLocal = process.env.STORAGE_DRIVER === "local";
+  const publicBase = process.env.B2_PUBLIC_BASE_URL;
+  const hasB2Creds =
+    !!process.env.B2_BUCKET &&
+    !!process.env.B2_ENDPOINT &&
+    !!process.env.B2_KEY_ID &&
+    !!process.env.B2_APP_KEY;
+
+  if (!forceLocal && publicBase && hasB2Creds) {
+    try {
+      const client = getClient();
+      await client.send(
+        new PutObjectCommand({
+          Bucket: BUCKET,
+          Key: safeKey,
+          Body: body,
+          ContentType: contentType,
+        })
+      );
+      return `${publicBase.replace(/\/$/, "")}/${safeKey}`;
+    } catch (err) {
+      if (!isConnectivityError(err)) throw err;
+      console.warn(
+        `[storage] B2 unreachable, falling back to local fs for public asset ${safeKey}.`
+      );
+    }
+  }
+
+  await writeLocalObject(safeKey, body);
+  return `/uploads/${safeKey}`;
 }
 
 export async function getUploadUrl(

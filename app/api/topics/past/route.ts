@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { TopicCategory } from "@/app/generated/prisma/enums";
+import { topicImagesByIds } from "@/lib/topic-image";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,13 @@ export async function GET(req: Request) {
     orderBy: { week: "desc" },
     take: 12,
     ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
-    include: {
+    select: {
+      id: true,
+      week: true,
+      category: true,
+      question: true,
+      questionEn: true,
+      closesAt: true,
       _count: { select: { takes: { where: { isPublished: true } } } },
       clusters: {
         where: { isMerged: false },
@@ -28,6 +35,7 @@ export async function GET(req: Request) {
   });
 
   const nextCursor = topics.length === 12 ? topics[topics.length - 1].id : null;
+  const imageMap = await topicImagesByIds(topics.map((t) => t.id));
 
   return Response.json({
     topics: topics.map((t) => ({
@@ -38,6 +46,7 @@ export async function GET(req: Request) {
       questionEn: t.questionEn,
       closesAt: t.closesAt,
       totalTakes: t._count.takes,
+      image: imageMap[t.id] ?? null,
       topClusters: t.clusters,
     })),
     nextCursor,

@@ -26,6 +26,14 @@ interface Topic {
   question: string;
   questionEn?: string | null;
   context?: string | null;
+  image?: {
+    url: string;
+    alt: string;
+    source: string;
+    creditName?: string | null;
+    creditUrl?: string | null;
+    color?: string | null;
+  } | null;
   closesAt: string;
   status: string;
   totalTakes: number;
@@ -131,6 +139,7 @@ export function ActiveTopicPage() {
         question={topic.question}
         questionEn={topic.questionEn}
         context={topic.context}
+        image={topic.image}
         closesAt={topic.closesAt}
         status={topic.status}
         totalTakes={topic.totalTakes}

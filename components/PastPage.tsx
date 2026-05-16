@@ -16,6 +16,14 @@ interface PastTopic {
   category: string;
   question: string;
   questionEn?: string | null;
+  image?: {
+    url: string;
+    alt: string;
+    source: string;
+    creditName?: string | null;
+    creditUrl?: string | null;
+    color?: string | null;
+  } | null;
   closesAt: string;
   totalTakes: number;
   topClusters: Array<{ id: string; label: string }>;
@@ -109,52 +117,102 @@ export function PastPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {topics.map((t) => (
-            <Link
+            <article
               key={t.id}
-              href={`/results?topicId=${t.id}`}
-              className="voices-card voices-card-hover p-5 flex flex-col gap-3 no-underline group"
+              className="voices-card voices-card-hover overflow-hidden flex flex-col no-underline group"
             >
-              <div className="flex items-center gap-2 flex-wrap">
-                <Pill variant="default">
-                  WEEK {t.week.toString().padStart(2, "0")}
-                </Pill>
-                <Pill variant="ghost">{t.category.toUpperCase()}</Pill>
-              </div>
-              <h2
-                className="text-[18px] sm:text-[19px] font-semibold leading-snug bn-text text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors"
-                style={{ fontFamily: "Hind Siliguri, Noto Sans Bengali, sans-serif" }}
-              >
-                {locale === "en" && t.questionEn ? t.questionEn : t.question}
-              </h2>
-              {t.topClusters.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-auto">
-                  {t.topClusters.slice(0, 2).map((c) => (
-                    <span
-                      key={c.id}
-                      className="voices-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-[var(--r-pill)] border"
-                      style={{
-                        color: "var(--muted)",
-                        borderColor: "var(--hairline-soft)",
-                        letterSpacing: "0.08em",
-                      }}
-                    >
-                      {c.label}
-                    </span>
-                  ))}
-                </div>
+              {t.image && (
+                <Link href={`/results?topicId=${t.id}`} className="block no-underline">
+                  <div
+                    className="aspect-[16/9] bg-[var(--surface-soft)] border-b"
+                    style={{
+                      borderColor: "var(--hairline-soft)",
+                      backgroundColor: t.image.color ?? "var(--surface-soft)",
+                    }}
+                  >
+                    <img
+                      src={t.image.url}
+                      alt={t.image.alt}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                </Link>
               )}
-              <div
-                className="pt-3 mt-1 border-t flex items-center justify-between"
-                style={{ borderColor: "var(--hairline-soft)" }}
-              >
-                <span className="voices-eyebrow">
-                  {t.totalTakes.toLocaleString()} VOICES
-                </span>
-                <span className="voices-mono text-[11px]" style={{ color: "var(--muted)" }}>
-                  {format(new Date(t.closesAt), "MMM d, yyyy")}
-                </span>
+              <div className="p-5 flex flex-col gap-3 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Pill variant="default">
+                    WEEK {t.week.toString().padStart(2, "0")}
+                  </Pill>
+                  <Pill variant="ghost">{t.category.toUpperCase()}</Pill>
+                </div>
+                <Link
+                  href={`/results?topicId=${t.id}`}
+                  className="no-underline"
+                >
+                  <h2
+                    className="text-[18px] sm:text-[19px] font-semibold leading-snug bn-text text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors"
+                    style={{ fontFamily: "Hind Siliguri, Noto Sans Bengali, sans-serif" }}
+                  >
+                    {locale === "en" && t.questionEn ? t.questionEn : t.question}
+                  </h2>
+                </Link>
+                {t.image?.source === "unsplash" && t.image.creditName && (
+                  <span className="voices-eyebrow normal-case tracking-normal">
+                    Photo by{" "}
+                    {t.image.creditUrl ? (
+                      <a
+                        href={t.image.creditUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+                      >
+                        {t.image.creditName}
+                      </a>
+                    ) : (
+                      t.image.creditName
+                    )}{" "}
+                    on{" "}
+                    <a
+                      href="https://unsplash.com/?utm_source=voices_discussion_platform&utm_medium=referral"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+                    >
+                      Unsplash
+                    </a>
+                  </span>
+                )}
+                {t.topClusters.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-auto">
+                    {t.topClusters.slice(0, 2).map((c) => (
+                      <span
+                        key={c.id}
+                        className="voices-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-[var(--r-pill)] border"
+                        style={{
+                          color: "var(--muted)",
+                          borderColor: "var(--hairline-soft)",
+                          letterSpacing: "0.08em",
+                        }}
+                      >
+                        {c.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div
+                  className="pt-3 mt-1 border-t flex items-center justify-between"
+                  style={{ borderColor: "var(--hairline-soft)" }}
+                >
+                  <span className="voices-eyebrow">
+                    {t.totalTakes.toLocaleString()} VOICES
+                  </span>
+                  <span className="voices-mono text-[11px]" style={{ color: "var(--muted)" }}>
+                    {format(new Date(t.closesAt), "MMM d, yyyy")}
+                  </span>
+                </div>
               </div>
-            </Link>
+            </article>
           ))}
         </div>
       )}

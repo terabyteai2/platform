@@ -10,7 +10,10 @@ export async function GET(
 
   const topic = await db.topic.findUnique({
     where: { id },
-    include: {
+    select: {
+      id: true,
+      closesAt: true,
+      status: true,
       clusters: {
         where: { isMerged: false },
         orderBy: { order: "asc" },

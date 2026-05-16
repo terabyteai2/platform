@@ -34,7 +34,10 @@ export async function POST(req: Request) {
 
   const { topicId, clusterId } = parsed.data;
 
-  const topic = await db.topic.findUnique({ where: { id: topicId } });
+  const topic = await db.topic.findUnique({
+    where: { id: topicId },
+    select: { status: true },
+  });
   if (!topic || topic.status !== "live") {
     return Response.json({ error: "Topic not live" }, { status: 403, headers });
   }
