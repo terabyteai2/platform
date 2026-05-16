@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Btn } from "@/components/ui/Btn";
+import { Pill } from "@/components/ui/Pill";
+import { Icon } from "@/components/ui/Icon";
 import { useLocale } from "@/lib/locale-context";
 import clsx from "clsx";
 
@@ -122,42 +124,52 @@ export function AdminComposePage() {
     setEditingCluster(clusters.length);
   }
 
+  const fieldLabel = "voices-eyebrow block mb-2";
   const inputClass = clsx(
-    "w-full p-3 rounded-[6px] border text-sm leading-relaxed",
-    "focus:outline-none focus:ring-2 focus:ring-[#1a1a1a] focus:ring-offset-1",
-    "bg-white text-[#14110d] border-[#e2ddd1] placeholder:text-[#7a7163]"
+    "w-full p-3 rounded-[10px] border text-[14px] leading-relaxed bg-[var(--surface)] text-[var(--ink)] border-[var(--hairline)] placeholder:text-[var(--muted)]",
+    "focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 focus:ring-offset-[var(--paper)]"
   );
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-8 pb-16">
-      <h1
-        className="text-2xl font-semibold text-[#14110d] mb-8"
-        style={{ fontFamily: "Noto Serif Bengali, Georgia, serif" }}
-      >
-        {msgs.admin.compose}
-      </h1>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-16">
+      <div className="mb-10">
+        <div className="flex items-center gap-2 mb-3">
+          <Pill variant="default">ADMIN</Pill>
+          <Pill variant="ai" icon={<Icon.Sparkle size={10} color="#fff" sw={2.5} />}>AI-ASSISTED</Pill>
+        </div>
+        <h1 className="voices-display text-4xl sm:text-5xl text-[var(--ink)]">
+          {msgs.admin.compose}
+        </h1>
+        <p
+          className="mt-3 voices-quote text-lg text-[var(--muted)]"
+          style={{ fontFamily: "Newsreader, Georgia, serif", fontStyle: "italic" }}
+        >
+          You drop the question. AI seeds the starting clusters. You curate.
+        </p>
+        <hr className="voices-rule mt-6" />
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left: form */}
-        <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
+        {/* Left: form (3/5) */}
+        <div className="lg:col-span-3 space-y-5">
+          <div>
+            <span className="voices-eyebrow">QUESTION</span>
+            <hr className="voices-rule-soft mt-1.5" />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-[#7a7163] mb-1.5">
-                সপ্তাহ নম্বর
-              </label>
+              <label className={fieldLabel}>WEEK</label>
               <input
                 type="number"
                 value={form.week}
                 onChange={(e) => setForm((f) => ({ ...f, week: e.target.value }))}
-                className={inputClass}
-                placeholder="1"
-                style={{ fontFamily: "JetBrains Mono, monospace" }}
+                className={clsx(inputClass, "voices-mono")}
+                placeholder="01"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#7a7163] mb-1.5">
-                {msgs.admin.category}
-              </label>
+              <label className={fieldLabel}>{msgs.admin.category.toUpperCase()}</label>
               <select
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
@@ -171,91 +183,96 @@ export function AdminComposePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[#7a7163] mb-1.5">
-              {msgs.admin.question}
-            </label>
+            <label className={fieldLabel}>{msgs.admin.question.toUpperCase()} · বাংলা</label>
             <textarea
               value={form.question}
               onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))}
-              className={clsx(inputClass, "min-h-[80px] resize-none")}
-              placeholder="বাংলায় প্রশ্ন লিখুন..."
+              className={clsx(inputClass, "min-h-[88px] resize-none voices-display-bn text-lg")}
+              placeholder="বাংলায় প্রশ্ন লিখুন…"
               maxLength={200}
-              style={{ fontFamily: "Hind Siliguri, Noto Sans Bengali, sans-serif" }}
+              style={{ fontFamily: "Noto Serif Bengali, Newsreader, Georgia, serif" }}
             />
-            <p className="text-xs text-[#7a7163] mt-0.5 text-right">{form.question.length}/200</p>
+            <p className="voices-mono text-[10px] mt-1 text-right text-[var(--muted)]">{form.question.length}/200</p>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[#7a7163] mb-1.5">
-              {msgs.admin.questionEn}
-            </label>
+            <label className={fieldLabel}>{msgs.admin.questionEn.toUpperCase()}</label>
             <textarea
               value={form.questionEn}
               onChange={(e) => setForm((f) => ({ ...f, questionEn: e.target.value }))}
-              className={clsx(inputClass, "min-h-[60px] resize-none")}
+              className={clsx(inputClass, "min-h-[64px] resize-none")}
               placeholder="English version (optional)"
               maxLength={200}
+              style={{ fontFamily: "Newsreader, Georgia, serif", fontStyle: "italic" }}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[#7a7163] mb-1.5">
-              {msgs.admin.context}
-            </label>
+            <label className={fieldLabel}>{msgs.admin.context.toUpperCase()}</label>
             <textarea
               value={form.context}
               onChange={(e) => setForm((f) => ({ ...f, context: e.target.value }))}
               className={clsx(inputClass, "min-h-[100px] resize-y")}
-              placeholder="ঐচ্ছিক প্রেক্ষাপট..."
+              placeholder="ঐচ্ছিক প্রেক্ষাপট…"
               style={{ fontFamily: "Hind Siliguri, Noto Sans Bengali, sans-serif" }}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-[#7a7163] mb-1.5">
-                {msgs.admin.opensAt}
-              </label>
+              <label className={fieldLabel}>{msgs.admin.opensAt.toUpperCase()}</label>
               <input
                 type="datetime-local"
                 value={form.opensAt}
                 onChange={(e) => setForm((f) => ({ ...f, opensAt: e.target.value }))}
-                className={inputClass}
+                className={clsx(inputClass, "voices-mono text-[13px]")}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#7a7163] mb-1.5">
-                {msgs.admin.closesAt}
-              </label>
+              <label className={fieldLabel}>{msgs.admin.closesAt.toUpperCase()}</label>
               <input
                 type="datetime-local"
                 value={form.closesAt}
                 onChange={(e) => setForm((f) => ({ ...f, closesAt: e.target.value }))}
-                className={inputClass}
+                className={clsx(inputClass, "voices-mono text-[13px]")}
               />
             </div>
           </div>
 
           {error && (
-            <p className="text-sm text-[#b85c1e] bg-[#fff4ef] rounded-[6px] px-3 py-2">{error}</p>
+            <div className="flex items-start gap-2 text-[13px] rounded-[10px] px-3.5 py-2.5"
+              style={{ background: "#fff4ef", color: "var(--warn)", border: "1px solid #f5d4c0" }}
+            >
+              <Icon.Warn size={14} sw={2} />
+              <span>{error}</span>
+            </div>
           )}
           {success && (
-            <p className="text-sm text-[#2d6a30] bg-[#edfbef] rounded-[6px] px-3 py-2">{success}</p>
+            <div className="flex items-start gap-2 text-[13px] rounded-[10px] px-3.5 py-2.5"
+              style={{ background: "#edfbef", color: "#2d6a30", border: "1px solid #c4dfc5" }}
+            >
+              <Icon.Check size={14} sw={2.2} />
+              <span>{success}</span>
+            </div>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 pt-2">
             <Btn onClick={handleSaveDraft} loading={saving} variant="secondary" size="md">
               খসড়া সংরক্ষণ
             </Btn>
             {topicId && (
               <Btn onClick={handleSeed} loading={seeding} variant="secondary" size="md">
+                <Icon.Sparkle size={14} sw={2} />
                 {msgs.admin.seedClusters}
               </Btn>
             )}
           </div>
 
           {topicId && (
-            <div className="flex gap-2 pt-2 border-t border-[#e2ddd1]">
+            <div
+              className="flex flex-wrap gap-2 pt-4 border-t"
+              style={{ borderColor: "var(--hairline)" }}
+            >
               <Btn
                 onClick={() => handlePublish("scheduled")}
                 loading={publishing}
@@ -267,32 +284,49 @@ export function AdminComposePage() {
               <Btn
                 onClick={() => handlePublish("live")}
                 loading={publishing}
-                variant="primary"
+                variant="accent"
                 size="md"
               >
-                {msgs.admin.publish} (LIVE)
+                {msgs.admin.publish}
+                <Icon.ArrowRight size={14} sw={2} />
               </Btn>
             </div>
           )}
         </div>
 
-        {/* Right: cluster preview */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-[#7a7163] uppercase tracking-wider" style={{ fontFamily: "JetBrains Mono, monospace" }}>
-              ক্লাস্টার ({clusters.length})
-            </h2>
+        {/* Right: cluster preview (2/5) */}
+        <div className="lg:col-span-2 space-y-5">
+          <div>
+            <span className="voices-eyebrow">CLUSTERS · {clusters.length.toString().padStart(2, "0")}</span>
+            <hr className="voices-rule-soft mt-1.5" />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <p
+              className="voices-quote text-[15px] text-[var(--muted)]"
+              style={{ fontFamily: "Newsreader, Georgia, serif", fontStyle: "italic" }}
+            >
+              Opinion seeds. Edit, remove, add.
+            </p>
             <button
               onClick={addCluster}
-              className="text-xs text-[#7a7163] hover:text-[#3a342c] underline underline-offset-2"
+              className="voices-eyebrow hover:text-[var(--ink)] transition-colors inline-flex items-center gap-1"
             >
-              + যোগ করুন
+              <Icon.Plus size={10} sw={2.4} />
+              ADD
             </button>
           </div>
 
           {clusters.length === 0 ? (
-            <div className="rounded-[12px] border border-dashed border-[#e2ddd1] p-8 text-center">
-              <p className="text-sm text-[#7a7163] bn-text" style={{ fontFamily: "Hind Siliguri, sans-serif" }}>
+            <div
+              className="rounded-[var(--r-lg)] border-2 border-dashed p-8 text-center"
+              style={{ borderColor: "var(--hairline)" }}
+            >
+              <Icon.Sparkle size={20} color="var(--muted)" sw={1.8} />
+              <p
+                className="mt-3 text-sm text-[var(--muted)] bn-text"
+                style={{ fontFamily: "Hind Siliguri, sans-serif" }}
+              >
                 AI ক্লাস্টার তৈরি করুন বা ম্যানুয়ালি যোগ করুন।
               </p>
             </div>
@@ -301,7 +335,7 @@ export function AdminComposePage() {
               {clusters.map((c, idx) => (
                 <div
                   key={idx}
-                  className="rounded-[12px] border border-[#e2ddd1] bg-white p-3 space-y-2"
+                  className="voices-card p-4 space-y-2.5"
                 >
                   {editingCluster === idx ? (
                     <>
@@ -320,41 +354,53 @@ export function AdminComposePage() {
                         placeholder="সারাংশ"
                         style={{ fontFamily: "Hind Siliguri, sans-serif" }}
                       />
-                      <div className="flex gap-2">
+                      <div className="flex gap-3 pt-1">
                         <button
                           onClick={() => setEditingCluster(null)}
-                          className="text-xs text-[#7a7163] hover:text-[#3a342c]"
+                          className="voices-eyebrow hover:text-[var(--ink)] inline-flex items-center gap-1"
                         >
-                          সম্পন্ন
+                          <Icon.Check size={10} sw={2.4} />
+                          DONE
                         </button>
                         <button
                           onClick={() => removeCluster(idx)}
-                          className="text-xs text-[#b85c1e] hover:opacity-75"
+                          className="voices-eyebrow inline-flex items-center gap-1"
+                          style={{ color: "var(--warn)" }}
                         >
-                          মুছুন
+                          <Icon.X size={10} sw={2.4} />
+                          REMOVE
                         </button>
                       </div>
                     </>
                   ) : (
-                    <div
-                      className="cursor-pointer"
+                    <button
+                      type="button"
+                      className="w-full text-left flex items-start gap-3"
                       onClick={() => setEditingCluster(idx)}
                     >
-                      <p
-                        className="text-sm font-medium text-[#14110d] bn-text"
-                        style={{ fontFamily: "Hind Siliguri, sans-serif" }}
+                      <span
+                        className="voices-mono text-[11px] font-semibold shrink-0 mt-0.5"
+                        style={{ color: "var(--muted)", letterSpacing: "0.08em" }}
                       >
-                        {c.label || "(লেবেল নেই)"}
-                      </p>
-                      {c.summary && (
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
+                      <div className="flex-1 min-w-0">
                         <p
-                          className="text-xs text-[#7a7163] mt-0.5"
+                          className="text-[15px] font-semibold text-[var(--ink)] bn-text leading-snug"
                           style={{ fontFamily: "Hind Siliguri, sans-serif" }}
                         >
-                          {c.summary}
+                          {c.label || "(লেবেল নেই)"}
                         </p>
-                      )}
-                    </div>
+                        {c.summary && (
+                          <p
+                            className="text-[13px] text-[var(--muted)] mt-1 bn-text"
+                            style={{ fontFamily: "Hind Siliguri, sans-serif" }}
+                          >
+                            {c.summary}
+                          </p>
+                        )}
+                      </div>
+                    </button>
                   )}
                 </div>
               ))}

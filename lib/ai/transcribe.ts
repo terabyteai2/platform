@@ -1,27 +1,40 @@
 import { db } from "@/lib/db";
 import { AsrProvider } from "@/app/generated/prisma/enums";
 
-interface TranscribeResult {
+export interface TranscribeResult {
   transcript: string;
   confidence: number;
   provider: AsrProvider;
   durationMs?: number;
 }
 
+export interface AudioInput {
+  bytes: Uint8Array;
+  contentType: string; // e.g. "audio/webm"
+  // Optional — used by Speechmatics which requires a fetchable URL. When
+  // present and publicly reachable, we can use URL mode; otherwise we fall
+  // back to bytes-mode providers only.
+  url?: string;
+}
+
 async function transcribeDeepgram(
-  audioUrl: string,
+  audio: AudioInput,
   takeId: string
 ): Promise<TranscribeResult> {
   const t0 = Date.now();
+  // Deepgram accepts raw audio bytes in the request body. This avoids the
+  // "Deepgram fetches the URL itself" path which requires public reachability.
+  // Force Bangla. nova-3 supports `bn`; `detect_language` was misclassifying
+  // short clips as English so we don't use it. Lock the language explicitly.
   const res = await fetch(
     "https://api.deepgram.com/v1/listen?language=bn&model=nova-3&punctuate=true&smart_format=true",
     {
       method: "POST",
       headers: {
         Authorization: `Token ${process.env.DEEPGRAM_API_KEY}`,
-        "Content-Type": "application/json",
+        "Content-Type": audio.contentType || "audio/webm",
       },
-      body: JSON.stringify({ url: audioUrl }),
+      body: audio.bytes as BodyInit,
     }
   );
 
@@ -35,8 +48,12 @@ async function transcribeDeepgram(
       purpose: "transcribe",
       latencyMs: latency,
       success: res.ok,
-      errorReason: res.ok ? null : JSON.stringify(data),
-      requestPayload: { url: audioUrl },
+      errorReason: res.ok ? null : JSON.stringify(data).slice(0, 1000),
+      requestPayload: {
+        mode: "bytes",
+        bytes: audio.bytes.byteLength,
+        contentType: audio.contentType,
+      },
       responsePayload: data,
     },
   });
@@ -52,51 +69,40 @@ async function transcribeDeepgram(
 }
 
 async function transcribeSpeechmatics(
-  audioUrl: string,
+  audio: AudioInput,
   takeId: string
 ): Promise<TranscribeResult> {
+  if (!audio.url) {
+    throw new Error("Speechmatics requires a publicly fetchable URL");
+  }
+  const audioUrl = audio.url;
   const t0 = Date.now();
 
-  // Submit job
-  const submitRes = await fetch(
-    "https://asr.api.speechmatics.com/v2/jobs/",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.SPEECHMATICS_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        config: {
-          type: "transcription",
-          transcription_config: { language: "bn" },
-        },
-        url: audioUrl,
-      }),
-    }
-  );
+  const submitRes = await fetch("https://asr.api.speechmatics.com/v2/jobs/", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.SPEECHMATICS_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      config: { type: "transcription", transcription_config: { language: "bn" } },
+      url: audioUrl,
+    }),
+  });
 
   if (!submitRes.ok) throw new Error("Speechmatics submit failed");
   const { id: jobId } = await submitRes.json();
 
-  // Poll for completion (max 30s for 60s audio)
   for (let i = 0; i < 15; i++) {
     await new Promise((r) => setTimeout(r, 2000));
-    const statusRes = await fetch(
-      `https://asr.api.speechmatics.com/v2/jobs/${jobId}`,
-      {
-        headers: { Authorization: `Bearer ${process.env.SPEECHMATICS_API_KEY}` },
-      }
-    );
+    const statusRes = await fetch(`https://asr.api.speechmatics.com/v2/jobs/${jobId}`, {
+      headers: { Authorization: `Bearer ${process.env.SPEECHMATICS_API_KEY}` },
+    });
     const status = await statusRes.json();
     if (status.job?.status === "done") {
       const transcriptRes = await fetch(
         `https://asr.api.speechmatics.com/v2/jobs/${jobId}/transcript?format=txt`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.SPEECHMATICS_API_KEY}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${process.env.SPEECHMATICS_API_KEY}` } }
       );
       const transcript = await transcriptRes.text();
       const latency = Date.now() - t0;
@@ -104,6 +110,8 @@ async function transcribeSpeechmatics(
       await db.aiCall.create({
         data: {
           takeId,
+          // AiProvider enum only has deepgram/gemini_flash; bucket
+          // speechmatics under deepgram for telemetry purposes.
           provider: "deepgram",
           purpose: "transcribe",
           latencyMs: latency,
@@ -122,14 +130,10 @@ async function transcribeSpeechmatics(
 }
 
 async function transcribeCloudflare(
-  audioUrl: string,
+  audio: AudioInput,
   takeId: string
 ): Promise<TranscribeResult> {
   const t0 = Date.now();
-
-  // Download audio to send as bytes (Cloudflare Workers AI requires bytes)
-  const audioRes = await fetch(audioUrl);
-  const audioBuffer = await audioRes.arrayBuffer();
 
   const res = await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/openai/whisper-large-v3-turbo`,
@@ -139,7 +143,7 @@ async function transcribeCloudflare(
         Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
         "Content-Type": "application/octet-stream",
       },
-      body: audioBuffer,
+      body: audio.bytes as BodyInit,
     }
   );
 
@@ -149,12 +153,13 @@ async function transcribeCloudflare(
   await db.aiCall.create({
     data: {
       takeId,
+      // Same — AiProvider enum is narrow; log Cloudflare under deepgram.
       provider: "deepgram",
       purpose: "transcribe",
       latencyMs: latency,
       success: res.ok,
-      errorReason: res.ok ? null : JSON.stringify(data),
-      requestPayload: { url: audioUrl },
+      errorReason: res.ok ? null : JSON.stringify(data).slice(0, 1000),
+      requestPayload: { mode: "bytes", bytes: audio.bytes.byteLength },
       responsePayload: data,
     },
   });
@@ -169,23 +174,23 @@ async function transcribeCloudflare(
 }
 
 export async function transcribe(
-  audioUrl: string,
+  audio: AudioInput,
   takeId: string
 ): Promise<TranscribeResult> {
   try {
-    return await transcribeDeepgram(audioUrl, takeId);
+    return await transcribeDeepgram(audio, takeId);
   } catch (err) {
-    console.error("Deepgram failed:", err);
+    console.error("[transcribe] Deepgram failed:", err);
   }
-  if (process.env.SPEECHMATICS_API_KEY) {
+  if (process.env.SPEECHMATICS_API_KEY && audio.url) {
     try {
-      return await transcribeSpeechmatics(audioUrl, takeId);
+      return await transcribeSpeechmatics(audio, takeId);
     } catch (err) {
-      console.error("Speechmatics failed:", err);
+      console.error("[transcribe] Speechmatics failed:", err);
     }
   }
   if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN) {
-    return await transcribeCloudflare(audioUrl, takeId);
+    return await transcribeCloudflare(audio, takeId);
   }
   throw new Error("All ASR providers failed or unavailable");
 }

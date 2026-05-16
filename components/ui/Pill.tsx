@@ -1,26 +1,77 @@
 import clsx from "clsx";
+import { ReactNode } from "react";
+
+type Variant = "default" | "live" | "accent" | "ai" | "ghost" | "warn";
 
 interface PillProps {
-  label: string;
+  // New, flexible API
+  children?: ReactNode;
+  variant?: Variant;
+  icon?: ReactNode;
+  className?: string;
+
+  // Legacy API (still used by RecordFlow / cluster pickers)
+  label?: string;
   selected?: boolean;
   onClick?: () => void;
-  className?: string;
 }
 
-export function Pill({ label, selected, onClick, className }: PillProps) {
+const variantClasses: Record<Variant, string> = {
+  default:
+    "bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--hairline)]",
+  live:
+    "bg-[var(--surface)] text-[var(--ink)] border border-[var(--hairline)]",
+  accent:
+    "bg-[var(--accent)] text-white border border-[var(--accent)]",
+  ai:
+    "bg-[var(--ink)] text-white border border-[var(--ink)]",
+  ghost:
+    "bg-transparent text-[var(--muted)] border border-transparent",
+  warn:
+    "bg-[#fbeee2] text-[var(--warn)] border border-[#eed4b8]",
+};
+
+export function Pill({
+  children,
+  variant = "default",
+  icon,
+  className,
+  label,
+  selected,
+  onClick,
+}: PillProps) {
+  // Legacy interactive pill — for cluster pickers
+  if (label !== undefined) {
+    return (
+      <button
+        onClick={onClick}
+        className={clsx(
+          "inline-flex items-center px-3 py-1.5 text-[13px] font-semibold rounded-[var(--r-pill)] border",
+          "transition-all duration-150",
+          selected
+            ? "bg-[var(--accent)] text-white border-[var(--accent)]"
+            : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--hairline)] hover:border-[var(--ink-soft)] hover:text-[var(--ink)]",
+          className
+        )}
+      >
+        {label}
+      </button>
+    );
+  }
+
+  // New static / decorative pill
   return (
-    <button
-      onClick={onClick}
+    <span
       className={clsx(
-        "inline-flex items-center px-3 py-1 text-sm font-medium rounded-[999px] border",
-        "transition-all duration-150",
-        selected
-          ? "bg-[#1a1a1a] text-white border-[#1a1a1a]"
-          : "bg-white text-[#3a342c] border-[#e2ddd1] hover:border-[#1a1a1a] hover:text-[#14110d]",
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--r-pill)] text-[11px] font-semibold",
+        "voices-mono",
+        variantClasses[variant],
         className
       )}
+      style={{ letterSpacing: "0.04em" }}
     >
-      {label}
-    </button>
+      {icon}
+      {children}
+    </span>
   );
 }

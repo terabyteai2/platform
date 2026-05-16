@@ -5,16 +5,12 @@
 Copy `.env.local` and fill in real values:
 
 ```
-DATABASE_URL=              # Neon / Supabase Postgres connection string
-SUPABASE_URL=              # https://xxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY= # from Supabase dashboard → Settings → API
+
 DEEPGRAM_API_KEY=          5b2c4ebf8db35cbc0f587d867a7c958b53d776b7
-SPEECHMATICS_API_KEY=      # speechmatics.com (fallback ASR)
-CLOUDFLARE_ACCOUNT_ID=     # Cloudflare dashboard
-CLOUDFLARE_API_TOKEN=      # with Workers AI read permission
+
 GEMINI_API_KEY=            AIzaSyDxcwYkiHMSO2oAFLybInV5DJqhEkOSmRA
 RESEND_API_KEY=            re_MrgJrdYo_6VWprQnqo45jwoJQpmpSLmve
-NEXT_PUBLIC_SITE_URL=      # https://your-domain.com
+NEXT_PUBLIC_SITE_URL=      saifeerahman.com
 ADMIN_EMAILS=              saifeer1019@gmail.com
 ```
 

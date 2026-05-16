@@ -40,10 +40,11 @@ export function ActiveTopicPage() {
   const fetchTopic = useCallback(async () => {
     try {
       const res = await fetch("/api/topics/active", { cache: "no-store" });
+      if (!res.ok) return; // keep existing data on server error
       const data = await res.json();
-      setTopic(data.topic);
-    } catch (e) {
-      console.error(e);
+      if (data.topic) setTopic(data.topic);
+    } catch {
+      // network error — keep existing data
     } finally {
       setLoading(false);
     }
@@ -58,14 +59,19 @@ export function ActiveTopicPage() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 pb-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-16 pb-8">
         <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-24 rounded-[12px] bg-[#e2ddd1] animate-pulse"
-            />
-          ))}
+          <div className="h-4 w-24 rounded bg-[var(--hairline)] animate-pulse" />
+          <div className="h-12 w-3/4 rounded bg-[var(--hairline)] animate-pulse" />
+          <div className="h-6 w-2/3 rounded bg-[var(--hairline-soft)] animate-pulse" />
+          <div className="pt-6 space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-28 rounded-[16px] bg-[var(--hairline-soft)] animate-pulse"
+              />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -73,14 +79,12 @@ export function ActiveTopicPage() {
 
   if (!topic) {
     return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-16 text-center">
-        <p
-          className="text-[#7a7163] text-lg"
-          style={{ fontFamily: "Hind Siliguri, Noto Sans Bengali, sans-serif" }}
-        >
-          {msgs.topic.noTopic}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-24 text-center space-y-3">
+        <span className="voices-eyebrow">NO ACTIVE TOPIC</span>
+        <p className="voices-display text-3xl text-[var(--ink)]">
+          The next question is brewing.
         </p>
-        <p className="text-[#7a7163] text-sm mt-2">
+        <p className="text-sm text-[var(--muted)]">
           Check back next week for a new topic.
         </p>
       </div>
@@ -109,7 +113,7 @@ export function ActiveTopicPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-16">
+    <div className="max-w-3xl mx-auto pb-16">
       <TopicHero
         id={topic.id}
         week={topic.week}
@@ -122,7 +126,12 @@ export function ActiveTopicPage() {
         category={topic.category}
       />
 
-      <div className="space-y-3">
+      <div className="px-4 sm:px-6 mb-4 flex items-center justify-between">
+        <span className="voices-eyebrow">OPINION CLUSTERS</span>
+        <span className="voices-eyebrow">AI · {topic.clusters.length} CLUSTERS</span>
+      </div>
+
+      <div className="space-y-3 px-4 sm:px-6">
         {topic.clusters.map((cluster, idx) => (
           <ClusterCard
             key={cluster.id}
@@ -136,6 +145,7 @@ export function ActiveTopicPage() {
             sampleTakes={cluster.sampleTakes}
             disabled={topic.status !== "live"}
             focused={focusedIdx === idx}
+            index={idx}
             onFocus={() => setFocusedIdx(idx)}
             tabIndex={0}
             onKeyDown={(e) => handleKeyDown(e, idx)}
@@ -144,23 +154,26 @@ export function ActiveTopicPage() {
       </div>
 
       {topic.status === "live" && (
-        <div className="mt-8 flex justify-center">
+        <div className="mt-10 px-4 sm:px-6 flex flex-col items-center gap-3">
           <Link href={`/record?topicId=${topic.id}`}>
-            <Btn size="lg" variant="primary">
-              {msgs.topic.addVoice} →
+            <Btn size="lg" variant="accent">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" />
+              </svg>
+              {msgs.topic.addVoice}
             </Btn>
+          </Link>
+          <Link
+            href={`/results?topicId=${topic.id}`}
+            className="voices-eyebrow hover:text-[var(--ink)] transition-colors"
+          >
+            VIEW LIVE TALLY →
           </Link>
         </div>
       )}
-
-      <div className="mt-6 text-center">
-        <Link
-          href={`/results?topicId=${topic.id}`}
-          className="text-sm text-[#7a7163] hover:text-[#3a342c] underline underline-offset-4"
-        >
-          {msgs.results.title} →
-        </Link>
-      </div>
     </div>
   );
 }

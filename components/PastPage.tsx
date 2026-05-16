@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useLocale } from "@/lib/locale-context";
 import Link from "next/link";
 import { format } from "date-fns";
+import { Pill } from "@/components/ui/Pill";
+import { Icon } from "@/components/ui/Icon";
+import clsx from "clsx";
 
 type Category = "work" | "tech" | "society" | "cities" | "local" | null;
 
@@ -18,13 +21,13 @@ interface PastTopic {
   topClusters: Array<{ id: string; label: string }>;
 }
 
-const categories: { key: Category; label: string }[] = [
-  { key: null, label: "সব" },
-  { key: "work", label: "কাজ" },
-  { key: "tech", label: "প্রযুক্তি" },
-  { key: "society", label: "সমাজ" },
-  { key: "cities", label: "শহর" },
-  { key: "local", label: "স্থানীয়" },
+const categories: { key: Category; label: string; labelEn: string }[] = [
+  { key: null, label: "সব", labelEn: "All" },
+  { key: "work", label: "কাজ", labelEn: "Work" },
+  { key: "tech", label: "প্রযুক্তি", labelEn: "Tech" },
+  { key: "society", label: "সমাজ", labelEn: "Society" },
+  { key: "cities", label: "শহর", labelEn: "Cities" },
+  { key: "local", label: "স্থানীয়", labelEn: "Local" },
 ];
 
 export function PastPage() {
@@ -54,79 +57,99 @@ export function PastPage() {
   }, [cat]);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-16">
-      <h1
-        className="text-2xl font-semibold text-[#14110d] mb-6"
-        style={{ fontFamily: "Noto Serif Bengali, Georgia, serif" }}
-      >
-        {msgs.past.title}
-      </h1>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 pb-16">
+      {/* Header */}
+      <div className="mb-8">
+        <span className="voices-eyebrow">ARCHIVE</span>
+        <h1 className="mt-2 voices-display text-4xl sm:text-5xl text-[var(--ink)]">
+          {msgs.past.title}
+        </h1>
+        <p
+          className="mt-3 voices-quote text-lg text-[var(--muted)]"
+          style={{ fontFamily: "Newsreader, Georgia, serif", fontStyle: "italic" }}
+        >
+          One question a week. The conversations live here.
+        </p>
+        <hr className="voices-rule mt-6" />
+      </div>
 
-      {/* Category filter */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {categories.map((c) => (
-          <button
-            key={String(c.key)}
-            onClick={() => setCat(c.key)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
-              cat === c.key
-                ? "bg-[#1a1a1a] text-white border-[#1a1a1a]"
-                : "bg-white text-[#3a342c] border-[#e2ddd1] hover:border-[#1a1a1a]"
-            }`}
-          >
-            {locale === "en"
-              ? { work: "Work", tech: "Tech", society: "Society", cities: "Cities", local: "Local", null: "All" }[String(c.key)]
-              : c.label}
-          </button>
-        ))}
+      {/* Category filter — pill row */}
+      <div className="flex flex-wrap gap-2 mb-8">
+        {categories.map((c) => {
+          const selected = cat === c.key;
+          return (
+            <button
+              key={String(c.key)}
+              onClick={() => setCat(c.key)}
+              className={clsx(
+                "inline-flex items-center px-3 py-1.5 text-[12px] font-semibold rounded-[var(--r-pill)] border voices-mono transition-all",
+                selected
+                  ? "bg-[var(--accent)] text-white border-[var(--accent)]"
+                  : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--hairline)] hover:border-[var(--ink-soft)] hover:text-[var(--ink)]"
+              )}
+              style={{ letterSpacing: "0.06em" }}
+            >
+              {(locale === "en" ? c.labelEn : c.label).toUpperCase()}
+            </button>
+          );
+        })}
       </div>
 
       {/* Topic grid */}
       {topics.length === 0 && !loading ? (
-        <p className="text-[#7a7163] text-sm">কোনো পুরোনো আলোচনা নেই।</p>
+        <div className="text-center py-12 voices-card">
+          <span className="voices-eyebrow block mb-2">EMPTY</span>
+          <p className="text-[var(--muted)] text-sm bn-text">
+            কোনো পুরোনো আলোচনা নেই।
+          </p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {topics.map((t) => (
             <Link
               key={t.id}
               href={`/results?topicId=${t.id}`}
-              className="block rounded-[12px] border border-[#e2ddd1] bg-white p-4 hover:border-[#1a1a1a] transition-colors group"
+              className="voices-card voices-card-hover p-5 flex flex-col gap-3 no-underline group"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <span
-                  className="text-xs text-[#7a7163]"
-                  style={{ fontFamily: "JetBrains Mono, monospace" }}
-                >
-                  সপ্তাহ {t.week}
-                </span>
-                <span
-                  className="text-xs text-[#7a7163] px-1.5 py-0.5 rounded-full bg-[#f5f2ec]"
-                  style={{ fontFamily: "JetBrains Mono, monospace" }}
-                >
-                  {t.category}
-                </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Pill variant="default">
+                  WEEK {t.week.toString().padStart(2, "0")}
+                </Pill>
+                <Pill variant="ghost">{t.category.toUpperCase()}</Pill>
               </div>
               <h2
-                className="text-sm font-semibold text-[#14110d] leading-snug mb-2 bn-text group-hover:underline underline-offset-2"
+                className="text-[18px] sm:text-[19px] font-semibold leading-snug bn-text text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors"
                 style={{ fontFamily: "Hind Siliguri, Noto Sans Bengali, sans-serif" }}
               >
                 {locale === "en" && t.questionEn ? t.questionEn : t.question}
               </h2>
-              <div className="flex flex-wrap gap-1 mb-3">
-                {t.topClusters.slice(0, 2).map((c) => (
-                  <span
-                    key={c.id}
-                    className="text-xs px-2 py-0.5 rounded-full bg-[#f5f2ec] text-[#7a7163] border border-[#e2ddd1]"
-                  >
-                    {c.label}
-                  </span>
-                ))}
-              </div>
-              <div className="flex items-center justify-between text-xs text-[#7a7163]">
-                <span style={{ fontFamily: "JetBrains Mono, monospace" }}>
-                  {t.totalTakes} মতামত
+              {t.topClusters.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-auto">
+                  {t.topClusters.slice(0, 2).map((c) => (
+                    <span
+                      key={c.id}
+                      className="voices-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-[var(--r-pill)] border"
+                      style={{
+                        color: "var(--muted)",
+                        borderColor: "var(--hairline-soft)",
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      {c.label}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div
+                className="pt-3 mt-1 border-t flex items-center justify-between"
+                style={{ borderColor: "var(--hairline-soft)" }}
+              >
+                <span className="voices-eyebrow">
+                  {t.totalTakes.toLocaleString()} VOICES
                 </span>
-                <span>{format(new Date(t.closesAt), "MMM d, yyyy")}</span>
+                <span className="voices-mono text-[11px]" style={{ color: "var(--muted)" }}>
+                  {format(new Date(t.closesAt), "MMM d, yyyy")}
+                </span>
               </div>
             </Link>
           ))}
@@ -134,20 +157,26 @@ export function PastPage() {
       )}
 
       {loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-40 rounded-[12px] bg-[#e2ddd1] animate-pulse" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-44 rounded-[var(--r-lg)] bg-[var(--hairline-soft)] animate-pulse" />
           ))}
         </div>
       )}
 
       {hasMore && !loading && (
-        <div className="mt-8 text-center">
+        <div className="mt-10 text-center">
           <button
             onClick={() => load(cat, cursor)}
-            className="px-6 py-2.5 rounded-[6px] border border-[#e2ddd1] text-sm font-medium text-[#3a342c] hover:bg-[#ececec] transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] border voices-mono text-[12px] font-semibold transition-colors hover:bg-[var(--accent-soft)]"
+            style={{
+              borderColor: "var(--hairline)",
+              color: "var(--ink-soft)",
+              letterSpacing: "0.08em",
+            }}
           >
-            {msgs.past.loadMore}
+            <Icon.Plus size={12} sw={2.4} />
+            {msgs.past.loadMore.toUpperCase()}
           </button>
         </div>
       )}

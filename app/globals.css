@@ -1,28 +1,49 @@
-@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;500;600&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Hind+Siliguri:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Hind+Siliguri:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
 :root {
-  --paper: #f5f2ec;
+  /* Editorial palette — warm paper, deliberative graphite */
+  --paper: #ece9e1;
+  --paper-deep: #e3dfd4;
   --surface: #ffffff;
+  --surface-soft: #f5f2ec;
   --ink: #14110d;
   --ink-soft: #3a342c;
   --muted: #7a7163;
-  --hairline: #e2ddd1;
+  --hairline: #d8d2c4;
+  --hairline-soft: #e6e1d4;
+
+  /* Accent — graphite tone (mockup default). Color marks meaning, not decoration. */
   --accent: #1a1a1a;
+  --accent-deep: #000000;
   --accent-soft: #ececec;
+
+  /* Signal */
   --warn: #b85c1e;
+  --live: #c63b3b;
+
+  /* Radii */
+  --r-sm: 6px;
+  --r: 10px;
+  --r-lg: 16px;
+  --r-pill: 999px;
 }
 
 @theme {
-  --color-paper: #f5f2ec;
+  --color-paper: #ece9e1;
+  --color-paper-deep: #e3dfd4;
   --color-surface: #ffffff;
+  --color-surface-soft: #f5f2ec;
   --color-ink: #14110d;
   --color-ink-soft: #3a342c;
   --color-muted: #7a7163;
-  --color-hairline: #e2ddd1;
+  --color-hairline: #d8d2c4;
+  --color-hairline-soft: #e6e1d4;
   --color-accent: #1a1a1a;
+  --color-accent-deep: #000000;
   --color-accent-soft: #ececec;
   --color-warn: #b85c1e;
+  --color-live: #c63b3b;
   --font-bangla-sans: "Hind Siliguri", "Noto Sans Bengali", sans-serif;
   --font-bangla-serif: "Noto Serif Bengali", Georgia, serif;
   --font-latin: "Plus Jakarta Sans", system-ui, sans-serif;
@@ -30,28 +51,32 @@
   --font-mono: "JetBrains Mono", monospace;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* Tailwind preflight already sets box-sizing, removes margins on body, etc.
+   Anything we add here must live inside @layer base so utility classes
+   (which live in @layer utilities) keep winning. */
+@layer base {
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
 
-html {
-  font-size: 16px;
-  -webkit-text-size-adjust: 100%;
-}
-
-body {
-  background-color: var(--paper);
-  color: var(--ink);
-  font-family: "Hind Siliguri", "Noto Sans Bengali", sans-serif;
-  line-height: 1.625;
-  min-height: 100dvh;
+  body {
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: "Hind Siliguri", "Plus Jakarta Sans", "Noto Sans Bengali", system-ui, sans-serif;
+    line-height: 1.55;
+    min-height: 100dvh;
+    font-feature-settings: "ss01", "ss02";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--paper); }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--hairline); border-radius: 3px; }
+
+::selection { background: var(--ink); color: var(--paper); }
 
 :focus-visible {
   outline: 2px solid var(--accent);
@@ -60,36 +85,151 @@ body {
 }
 
 button, a {
-  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
-.bn-serif {
-  font-family: "Noto Serif Bengali", Georgia, serif;
-  line-height: 1.75;
+/* ─── Editorial utility classes (mirroring the hi-fi mockup) ─── */
+
+/* Project utility classes — kept in @layer components so Tailwind utilities
+   (font-size, line-height, color, etc.) can still override them on a
+   per-element basis when needed. */
+@layer components {
+  .voices-serif {
+    font-family: "Newsreader", "Noto Serif Bengali", Georgia, serif;
+    font-feature-settings: "kern", "liga";
+  }
+
+  .bn-serif {
+    font-family: "Noto Serif Bengali", "Newsreader", Georgia, serif;
+    line-height: 1.5;
+  }
+
+  .bn-text {
+    font-family: "Hind Siliguri", "Noto Sans Bengali", sans-serif;
+    line-height: 1.65;
+  }
+
+  .voices-mono {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .voices-eyebrow {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .voices-eyebrow-lg {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .voices-rule {
+    border: 0;
+    border-top: 1px solid var(--hairline);
+  }
+
+  .voices-rule-soft {
+    border: 0;
+    border-top: 1px solid var(--hairline-soft);
+  }
+
+  .voices-display {
+    font-family: "Newsreader", "Noto Serif Bengali", Georgia, serif;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+
+  .voices-display-bn {
+    font-family: "Noto Serif Bengali", "Newsreader", Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    line-height: 1.2;
+  }
+
+  .voices-quote {
+    font-family: "Newsreader", "Noto Serif Bengali", Georgia, serif;
+    font-style: italic;
+    font-weight: 500;
+  }
 }
 
-.bn-text {
-  font-family: "Hind Siliguri", "Noto Sans Bengali", sans-serif;
-  line-height: 1.75;
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
-/* Waveform animation */
+/* ─── Animations & decorative classes ─── */
+
 @keyframes waveBar {
   0%, 100% { transform: scaleY(0.3); }
   50% { transform: scaleY(1); }
 }
-.wave-bar {
-  animation: waveBar 0.8s ease-in-out infinite;
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.85); }
 }
-.wave-bar:nth-child(2) { animation-delay: 0.1s; }
-.wave-bar:nth-child(3) { animation-delay: 0.2s; }
-.wave-bar:nth-child(4) { animation-delay: 0.3s; }
-.wave-bar:nth-child(5) { animation-delay: 0.4s; }
-.wave-bar:nth-child(6) { animation-delay: 0.3s; }
-.wave-bar:nth-child(7) { animation-delay: 0.2s; }
-.wave-bar:nth-child(8) { animation-delay: 0.1s; }
+@keyframes caretBlink {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
 
-/* Bar chart transition */
-.pct-bar {
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+@layer components {
+  .wave-bar {
+    animation: waveBar 0.8s ease-in-out infinite;
+    transform-origin: center;
+  }
+  .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+  .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+  .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+  .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+  .wave-bar:nth-child(6) { animation-delay: 0.3s; }
+  .wave-bar:nth-child(7) { animation-delay: 0.2s; }
+  .wave-bar:nth-child(8) { animation-delay: 0.1s; }
+
+  .voices-live-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--live);
+    animation: livePulse 1.6s ease-in-out infinite;
+  }
+
+  .voices-caret {
+    display: inline-block;
+    width: 2px;
+    height: 1.05em;
+    margin-left: 2px;
+    vertical-align: -0.12em;
+    background: var(--accent);
+    border-radius: 1px;
+    animation: caretBlink 1s steps(2, start) infinite;
+  }
+
+  .pct-bar {
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .voices-card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+  }
+  .voices-card-hover {
+    transition: border-color 0.15s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  }
+  .voices-card-hover:hover {
+    border-color: var(--ink-soft);
+    box-shadow: 0 1px 0 var(--hairline), 0 8px 24px -16px rgba(20, 17, 13, 0.18);
+  }
 }

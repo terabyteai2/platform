@@ -30,7 +30,6 @@ export function VoteStack({
     setLoading(true);
 
     const prev = localVote;
-    // Optimistic update
     if (prev === dir) {
       setLocalVote(null);
       if (dir === "up") setLocalUp((v) => v - 1);
@@ -53,7 +52,6 @@ export function VoteStack({
         });
       }
     } catch {
-      // Revert
       setLocalVote(prev);
       setLocalUp(upvotes);
       setLocalDown(downvotes);
@@ -62,39 +60,54 @@ export function VoteStack({
     }
   }
 
+  const net = localUp - localDown;
+
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-col items-stretch shrink-0 rounded-[10px] border overflow-hidden"
+      style={{ borderColor: "var(--hairline)", background: "var(--surface)" }}
+    >
       <button
         onClick={() => handleVote("up")}
         disabled={loading || disabled}
         aria-label="একমত"
         className={clsx(
-          "flex items-center gap-1 px-2 py-1 rounded-[6px] text-xs font-medium",
-          "border transition-all",
+          "flex items-center justify-center w-12 h-9 transition-colors",
           localVote === "up"
-            ? "bg-[#1a1a1a] text-white border-[#1a1a1a]"
-            : "bg-white text-[#3a342c] border-[#e2ddd1] hover:border-[#1a1a1a]",
-          "disabled:opacity-50"
+            ? "bg-[var(--accent)] text-white"
+            : "text-[var(--ink-soft)] hover:bg-[var(--accent-soft)]",
+          "disabled:opacity-50 disabled:cursor-not-allowed"
         )}
       >
-        <span>↑</span>
-        <span style={{ fontFamily: "JetBrains Mono, monospace" }}>{localUp}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <polyline points="6 15 12 9 18 15" />
+        </svg>
       </button>
+      <div
+        className="flex items-center justify-center text-center px-2 py-1.5 voices-mono text-[13px] font-semibold border-y"
+        style={{
+          borderColor: "var(--hairline)",
+          color: net > 0 ? "var(--ink)" : net < 0 ? "var(--warn)" : "var(--muted)",
+          minWidth: 48,
+        }}
+        title={`↑${localUp} · ↓${localDown}`}
+      >
+        {net > 0 ? `+${net}` : net}
+      </div>
       <button
         onClick={() => handleVote("down")}
         disabled={loading || disabled}
         aria-label="দ্বিমত"
         className={clsx(
-          "flex items-center gap-1 px-2 py-1 rounded-[6px] text-xs font-medium",
-          "border transition-all",
+          "flex items-center justify-center w-12 h-9 transition-colors",
           localVote === "down"
-            ? "bg-[#b85c1e] text-white border-[#b85c1e]"
-            : "bg-white text-[#3a342c] border-[#e2ddd1] hover:border-[#b85c1e]",
-          "disabled:opacity-50"
+            ? "bg-[var(--warn)] text-white"
+            : "text-[var(--ink-soft)] hover:bg-[var(--accent-soft)]",
+          "disabled:opacity-50 disabled:cursor-not-allowed"
         )}
       >
-        <span>↓</span>
-        <span style={{ fontFamily: "JetBrains Mono, monospace" }}>{localDown}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </button>
     </div>
   );

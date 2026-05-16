@@ -41,3 +41,10 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# Local-only runtime artifacts
+public/uploads/
+
+# Reference mockup (large, dev-only)
+public/Voices_Standalone_(1).html
+public/Voices _Standalone_(1).html

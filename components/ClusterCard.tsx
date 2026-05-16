@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { VoteStack } from "@/components/ui/VoteStack";
+import { Pill } from "@/components/ui/Pill";
+import { Icon } from "@/components/ui/Icon";
 import clsx from "clsx";
 
 interface ClusterCardProps {
@@ -15,6 +17,7 @@ interface ClusterCardProps {
   sampleTakes?: Array<{ id: string; content: string; author: string | null }>;
   disabled?: boolean;
   focused?: boolean;
+  index?: number;
   onFocus?: () => void;
   tabIndex?: number;
   onKeyDown?: (e: React.KeyboardEvent) => void;
@@ -31,6 +34,7 @@ export function ClusterCard({
   sampleTakes,
   disabled,
   focused,
+  index,
   onFocus,
   tabIndex,
   onKeyDown,
@@ -40,10 +44,9 @@ export function ClusterCard({
   return (
     <article
       className={clsx(
-        "rounded-[12px] border p-4 space-y-3 focus-within:ring-2 focus-within:ring-[#1a1a1a] focus-within:ring-offset-1",
-        "transition-all duration-150",
-        focused ? "border-[#1a1a1a]" : "border-[#e2ddd1]",
-        "bg-white"
+        "voices-card voices-card-hover p-5 sm:p-6",
+        "focus-within:ring-2 focus-within:ring-[var(--accent)] focus-within:ring-offset-2 focus-within:ring-offset-[var(--paper)]",
+        focused && "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--paper)]"
       )}
       tabIndex={tabIndex}
       onFocus={onFocus}
@@ -51,23 +54,37 @@ export function ClusterCard({
       role="group"
       aria-label={label}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start gap-4">
+        {/* Index marker */}
+        {typeof index === "number" && (
+          <div
+            className="shrink-0 w-7 h-7 rounded-[6px] flex items-center justify-center voices-mono text-[11px] font-semibold"
+            style={{
+              background: "var(--accent-soft)",
+              color: "var(--ink)",
+            }}
+          >
+            {String(index + 1).padStart(2, "0")}
+          </div>
+        )}
+
         <div className="flex-1 min-w-0">
           <h3
-            className="text-base font-semibold text-[#14110d] leading-snug bn-text"
+            className="text-[17px] sm:text-lg font-semibold text-[var(--ink)] leading-snug bn-text"
             style={{ fontFamily: "Hind Siliguri, Noto Sans Bengali, sans-serif" }}
           >
             {label}
           </h3>
           {summary && (
             <p
-              className="text-sm text-[#3a342c] mt-0.5 leading-relaxed bn-text"
+              className="text-[14px] text-[var(--ink-soft)] mt-1.5 leading-relaxed bn-text"
               style={{ fontFamily: "Hind Siliguri, Noto Sans Bengali, sans-serif" }}
             >
               {summary}
             </p>
           )}
         </div>
+
         <VoteStack
           clusterId={id}
           upvotes={upvotes}
@@ -77,35 +94,43 @@ export function ClusterCard({
         />
       </div>
 
-      <div className="flex items-center justify-between">
-        <span
-          className="text-xs text-[#7a7163]"
-          style={{ fontFamily: "JetBrains Mono, monospace" }}
-        >
-          {takeCount} মতামত
-        </span>
+      <div className="mt-4 pt-3 flex items-center justify-between gap-3 border-t flex-wrap" style={{ borderColor: "var(--hairline-soft)" }}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Pill variant="ai" icon={<Icon.Sparkle size={9} color="#fff" sw={2.5} />}>
+            AI CLUSTERED
+          </Pill>
+          <span className="voices-eyebrow">
+            {takeCount} {takeCount === 1 ? "VOICE" : "VOICES"} · ↑{upvotes} ↓{downvotes}
+          </span>
+        </div>
 
         {sampleTakes && sampleTakes.length > 0 && (
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="text-xs text-[#7a7163] hover:text-[#3a342c] underline-offset-2 hover:underline transition-colors"
+            className="voices-mono text-[11px] font-semibold tracking-wider uppercase text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors inline-flex items-center gap-1"
           >
-            {expanded ? "কম দেখুন" : "মতামত দেখুন"}
+            {expanded ? "− HIDE" : "+ READ"}
           </button>
         )}
       </div>
 
       {expanded && sampleTakes && sampleTakes.length > 0 && (
-        <div className="space-y-2 pt-1 border-t border-[#e2ddd1]">
+        <div className="mt-4 space-y-3">
           {sampleTakes.map((take) => (
             <blockquote
               key={take.id}
-              className="text-sm text-[#3a342c] italic leading-relaxed pl-3 border-l-2 border-[#e2ddd1]"
-              style={{ fontFamily: "Hind Siliguri, Noto Sans Bengali, sans-serif" }}
+              className="pl-4 border-l-2 voices-quote text-[15px] text-[var(--ink-soft)] leading-relaxed bn-serif"
+              style={{
+                borderColor: "var(--accent)",
+                fontFamily: "Noto Serif Bengali, Newsreader, Georgia, serif",
+              }}
             >
-              <p>"{take.content}"</p>
+              <p>&ldquo;{take.content}&rdquo;</p>
               {take.author && (
-                <footer className="text-xs text-[#7a7163] mt-0.5 not-italic">
+                <footer
+                  className="voices-eyebrow mt-2"
+                  style={{ fontStyle: "normal" }}
+                >
                   — {take.author}
                 </footer>
               )}

@@ -2,49 +2,66 @@
 
 import Link from "next/link";
 import { useLocale } from "@/lib/locale-context";
+import { Avatar } from "@/components/Avatar";
 
 export function Navbar() {
   const { locale, msgs, setLocale } = useLocale();
 
   return (
     <nav
-      className="sticky top-0 z-50 border-b"
+      className="sticky top-0 z-50 border-b backdrop-blur-md"
       style={{
-        backgroundColor: "var(--surface)",
+        backgroundColor: "color-mix(in srgb, var(--paper) 88%, transparent)",
         borderColor: "var(--hairline)",
       }}
     >
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-        {/* Wordmark */}
-        <Link
-          href="/"
-          className="flex items-center gap-2 no-underline"
-        >
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        {/* Wordmark + tagline */}
+        <Link href="/" className="flex items-center gap-2.5 no-underline group">
           <span
-            className="inline-flex items-center justify-center w-8 h-8 rounded-[6px] text-white text-base font-semibold"
-            style={{ backgroundColor: "var(--ink)", fontFamily: "Newsreader, Georgia, serif" }}
+            className="inline-flex items-center justify-center w-9 h-9 rounded-[8px] text-white text-lg shrink-0"
+            style={{
+              backgroundColor: "var(--ink)",
+              fontFamily: "Newsreader, Georgia, serif",
+              fontWeight: 500,
+              lineHeight: 1,
+            }}
           >
             V
           </span>
-          <span
-            className="font-semibold text-base tracking-tight"
-            style={{ color: "var(--ink)", fontFamily: "Newsreader, Georgia, serif" }}
-          >
-            Voices
+          <span className="flex flex-col leading-none">
+            <span
+              className="voices-serif"
+              style={{
+                color: "var(--ink)",
+                fontWeight: 500,
+                fontSize: "20px",
+                letterSpacing: "-0.015em",
+                lineHeight: 1,
+              }}
+            >
+              Voices
+            </span>
+            <span
+              className="voices-eyebrow mt-1 hidden sm:inline"
+              style={{ fontSize: "9px", letterSpacing: "0.22em" }}
+            >
+              WEEK · BANGLA
+            </span>
           </span>
         </Link>
 
         <div className="flex items-center gap-1">
           <Link
             href="/results"
-            className="px-3 py-1.5 rounded-[6px] text-sm font-medium hover:bg-[#ececec] transition-colors"
+            className="px-3 py-1.5 rounded-[8px] text-sm font-medium hover:bg-[var(--accent-soft)] transition-colors"
             style={{ color: "var(--ink-soft)" }}
           >
             {msgs.nav.results}
           </Link>
           <Link
             href="/past"
-            className="px-3 py-1.5 rounded-[6px] text-sm font-medium hover:bg-[#ececec] transition-colors"
+            className="px-3 py-1.5 rounded-[8px] text-sm font-medium hover:bg-[var(--accent-soft)] transition-colors"
             style={{ color: "var(--ink-soft)" }}
           >
             {msgs.nav.past}
@@ -53,15 +70,21 @@ export function Navbar() {
           {/* Locale toggle */}
           <button
             onClick={() => setLocale(locale === "bn" ? "en" : "bn")}
-            className="ml-1 px-2.5 py-1 rounded-[6px] text-xs font-medium border transition-all hover:bg-[#ececec]"
+            className="ml-1 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all hover:bg-[var(--accent-soft)]"
             style={{
               fontFamily: "JetBrains Mono, monospace",
               borderColor: "var(--hairline)",
-              color: "var(--muted)",
+              color: "var(--ink-soft)",
+              letterSpacing: "0.05em",
             }}
           >
             {locale === "bn" ? "EN" : "বাং"}
           </button>
+
+          {/* User avatar — opens name editor */}
+          <div className="ml-1">
+            <Avatar size="md" />
+          </div>
         </div>
       </div>
     </nav>

@@ -11,21 +11,21 @@ export function ConfidenceChip({ confidence }: ConfidenceChipProps) {
   return (
     <span
       className={clsx(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--r-pill)] text-[11px] font-semibold voices-mono",
         "border",
         isLow
-          ? "bg-[#fff4ef] text-[#b85c1e] border-[#f5d4c0]"
-          : "bg-[#f0f5f0] text-[#2d6a30] border-[#c4dfc5]"
+          ? "bg-[#fff4ef] text-[var(--warn)] border-[#f5d4c0]"
+          : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--hairline)]"
       )}
-      style={{ fontFamily: "JetBrains Mono, monospace" }}
+      style={{ letterSpacing: "0.04em" }}
     >
       <span
         className={clsx(
           "w-1.5 h-1.5 rounded-full",
-          isLow ? "bg-[#b85c1e]" : "bg-[#2d6a30]"
+          isLow ? "bg-[var(--warn)]" : "bg-[#2d6a30]"
         )}
       />
-      {pct}%
+      ASR {pct}%
     </span>
   );
 }

@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { Btn } from "@/components/ui/Btn";
 import { ConfidenceChip } from "@/components/ui/ConfidenceChip";
+import { Pill } from "@/components/ui/Pill";
+import { Icon } from "@/components/ui/Icon";
 import { format } from "date-fns";
+import clsx from "clsx";
 
 interface FlaggedTake {
   id: string;
@@ -51,34 +54,56 @@ export function AdminQueuePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-16">
-      <h1
-        className="text-2xl font-semibold text-[#14110d] mb-6"
-        style={{ fontFamily: "Noto Serif Bengali, Georgia, serif" }}
-      >
-        মডারেশন কিউ
-      </h1>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 pb-16">
+      <div className="mb-8">
+        <div className="flex items-center gap-2 mb-3">
+          <Pill variant="default">ADMIN</Pill>
+          <Pill variant="live" icon={<span className="voices-live-dot" />}>QUEUE</Pill>
+        </div>
+        <h1 className="voices-display text-4xl sm:text-5xl text-[var(--ink)]">
+          মডারেশন কিউ
+        </h1>
+        <p
+          className="mt-3 voices-quote text-lg text-[var(--muted)]"
+          style={{ fontFamily: "Newsreader, Georgia, serif", fontStyle: "italic" }}
+        >
+          Flagged voices and emerging clusters waiting on your call.
+        </p>
+        <hr className="voices-rule mt-6" />
+      </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-[#e2ddd1]">
-        {(["flagged", "clusters"] as const).map((t) => (
+      <div
+        className="flex gap-0 mb-8 border-b"
+        style={{ borderColor: "var(--hairline)" }}
+      >
+        {(
+          [
+            { key: "flagged", label: `FLAGGED · ${String(flagged.length).padStart(2, "0")}` },
+            { key: "clusters", label: `NEW CLUSTERS · ${String(pendingClusters.length).padStart(2, "0")}` },
+          ] as const
+        ).map((t) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === t
-                ? "border-[#1a1a1a] text-[#14110d]"
-                : "border-transparent text-[#7a7163] hover:text-[#3a342c]"
-            }`}
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={clsx(
+              "voices-mono text-[11px] font-semibold px-4 py-3 border-b-2 transition-colors",
+              tab === t.key
+                ? "border-[var(--accent)] text-[var(--ink)]"
+                : "border-transparent text-[var(--muted)] hover:text-[var(--ink-soft)]"
+            )}
+            style={{ letterSpacing: "0.1em" }}
           >
-            {t === "flagged" ? `ফ্ল্যাগড (${flagged.length})` : `নতুন ক্লাস্টার (${pendingClusters.length})`}
+            {t.label}
           </button>
         ))}
       </div>
 
       {loading && (
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => <div key={i} className="h-24 rounded-[12px] bg-[#e2ddd1] animate-pulse" />)}
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-28 rounded-[var(--r-lg)] bg-[var(--hairline-soft)] animate-pulse" />
+          ))}
         </div>
       )}
 
@@ -86,39 +111,46 @@ export function AdminQueuePage() {
       {tab === "flagged" && !loading && (
         <div className="space-y-4">
           {flagged.length === 0 ? (
-            <p className="text-[#7a7163] text-sm">কোনো ফ্ল্যাগড মতামত নেই। ✓</p>
+            <div className="voices-card p-10 text-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--accent-soft)] mx-auto mb-3">
+                <Icon.Check size={22} color="var(--accent)" sw={2.2} />
+              </div>
+              <span className="voices-eyebrow block mb-1">QUEUE CLEAR</span>
+              <p className="text-[var(--muted)] text-sm bn-text">কোনো ফ্ল্যাগড মতামত নেই।</p>
+            </div>
           ) : (
             flagged.map((take) => (
-              <div
-                key={take.id}
-                className="rounded-[12px] border border-[#e2ddd1] bg-white p-4 space-y-3"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-1 flex-1">
-                    {take.cluster && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-[#f5f2ec] text-[#7a7163] border border-[#e2ddd1]">
-                        {take.cluster.label}
-                      </span>
-                    )}
+              <div key={take.id} className="voices-card p-5 space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {take.cluster && <Pill variant="default">{take.cluster.label}</Pill>}
+                      {take.user.isAnon ? (
+                        <Pill variant="ghost">ANON</Pill>
+                      ) : (
+                        <Pill variant="ghost">{(take.user.displayName ?? "USER").toUpperCase()}</Pill>
+                      )}
+                    </div>
                     <p
-                      className="text-sm text-[#14110d] leading-relaxed bn-text"
+                      className="text-[15px] text-[var(--ink)] leading-relaxed bn-text"
                       style={{ fontFamily: "Hind Siliguri, sans-serif" }}
                     >
                       {take.content}
                     </p>
                     {take.moderationReason && (
-                      <p className="text-xs text-[#b85c1e] bg-[#fff4ef] rounded px-2 py-1">
-                        ⚠ {take.moderationReason}
-                      </p>
+                      <div className="flex items-start gap-2 text-[12px] rounded-[8px] px-3 py-2"
+                        style={{ background: "#fff4ef", color: "var(--warn)", border: "1px solid #f5d4c0" }}
+                      >
+                        <Icon.Warn size={12} sw={2} />
+                        <span>{take.moderationReason}</span>
+                      </div>
                     )}
                   </div>
-                  <div className="shrink-0 space-y-1 text-right">
-                    {take.asrConfidence != null && (
-                      <ConfidenceChip confidence={take.asrConfidence} />
-                    )}
-                    <p className="text-xs text-[#7a7163]">
-                      {format(new Date(take.createdAt), "MMM d, HH:mm")}
-                    </p>
+                  <div className="shrink-0 flex flex-col items-end gap-1.5">
+                    {take.asrConfidence != null && <ConfidenceChip confidence={take.asrConfidence} />}
+                    <span className="voices-mono text-[10px]" style={{ color: "var(--muted)" }}>
+                      {format(new Date(take.createdAt), "MMM d · HH:mm")}
+                    </span>
                   </div>
                 </div>
 
@@ -126,8 +158,12 @@ export function AdminQueuePage() {
                   <audio controls src={take.audioUrl} className="w-full" />
                 )}
 
-                <div className="flex gap-2">
-                  <Btn size="sm" variant="secondary" onClick={() => action(take.id, "approve")}>
+                <div
+                  className="flex flex-wrap gap-2 pt-3 border-t"
+                  style={{ borderColor: "var(--hairline-soft)" }}
+                >
+                  <Btn size="sm" variant="accent" onClick={() => action(take.id, "approve")}>
+                    <Icon.Check size={12} sw={2.2} />
                     অনুমোদন
                   </Btn>
                   <Btn size="sm" variant="secondary" onClick={() => action(take.id, "hide")}>
@@ -145,36 +181,46 @@ export function AdminQueuePage() {
 
       {/* Pending clusters */}
       {tab === "clusters" && !loading && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {pendingClusters.length === 0 ? (
-            <p className="text-[#7a7163] text-sm">কোনো নতুন ক্লাস্টার নেই।</p>
+            <div className="voices-card p-10 text-center">
+              <span className="voices-eyebrow block mb-1">NO PENDING CLUSTERS</span>
+              <p className="text-[var(--muted)] text-sm bn-text">কোনো নতুন ক্লাস্টার নেই।</p>
+            </div>
           ) : (
-            pendingClusters.map((c) => (
-              <div
-                key={c.id}
-                className="rounded-[12px] border border-[#e2ddd1] bg-white p-4"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p
-                      className="text-sm font-semibold text-[#14110d] bn-text"
-                      style={{ fontFamily: "Hind Siliguri, sans-serif" }}
+            pendingClusters.map((c, idx) => (
+              <div key={c.id} className="voices-card p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <span
+                      className="voices-mono text-[11px] font-semibold shrink-0 mt-1"
+                      style={{ color: "var(--muted)", letterSpacing: "0.08em" }}
                     >
-                      {c.label}
-                    </p>
-                    {c.summary && (
-                      <p className="text-xs text-[#7a7163] mt-0.5">{c.summary}</p>
-                    )}
-                    <p className="text-xs text-[#7a7163] mt-1">
-                      {c._count.takes} মতামত · {c.topic.question.slice(0, 60)}...
-                    </p>
+                      {String(idx + 1).padStart(2, "0")}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="text-[16px] font-semibold text-[var(--ink)] bn-text leading-snug"
+                        style={{ fontFamily: "Hind Siliguri, sans-serif" }}
+                      >
+                        {c.label}
+                      </p>
+                      {c.summary && (
+                        <p
+                          className="text-[13px] text-[var(--muted)] mt-1 bn-text leading-relaxed"
+                          style={{ fontFamily: "Hind Siliguri, sans-serif" }}
+                        >
+                          {c.summary}
+                        </p>
+                      )}
+                      <p className="voices-eyebrow mt-2">
+                        FROM: {c.topic.question.slice(0, 50)}…
+                      </p>
+                    </div>
                   </div>
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full bg-[#f5f2ec] text-[#7a7163]"
-                    style={{ fontFamily: "JetBrains Mono, monospace" }}
-                  >
+                  <Pill variant="ai" icon={<Icon.Sparkle size={10} color="#fff" sw={2.5} />}>
                     {c._count.takes}/5
-                  </span>
+                  </Pill>
                 </div>
               </div>
             ))

@@ -4,6 +4,7 @@ import { useLocale } from "@/lib/locale-context";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { Btn } from "@/components/ui/Btn";
+import { Pill } from "@/components/ui/Pill";
 
 interface TopicHeroProps {
   id: string;
@@ -41,71 +42,78 @@ export function TopicHero({
     local: locale === "bn" ? "স্থানীয়" : "Local",
   };
 
+  const headline = locale === "en" && questionEn ? questionEn : question;
+  const headlineClass = locale === "en" && questionEn ? "voices-display" : "voices-display-bn";
+
   return (
-    <section className="pt-8 pb-6 px-4 sm:px-6 max-w-3xl mx-auto">
-      {/* Week + category + status */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <span
-          className="text-xs font-medium px-2.5 py-1 rounded-full bg-[#ececec] text-[#3a342c]"
-          style={{ fontFamily: "JetBrains Mono, monospace" }}
-        >
-          {msgs.topic.week} {week}
-        </span>
-        <span
-          className="text-xs font-medium px-2.5 py-1 rounded-full border border-[#e2ddd1] text-[#7a7163]"
-          style={{ fontFamily: "JetBrains Mono, monospace" }}
-        >
-          {categoryLabels[category] ?? category}
-        </span>
-        <span
-          className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-            isClosed
-              ? "bg-[#f5f2ec] text-[#7a7163] border border-[#e2ddd1]"
-              : "bg-[#edfbef] text-[#2d6a30] border border-[#c4dfc5]"
-          }`}
-          style={{ fontFamily: "JetBrains Mono, monospace" }}
-        >
-          {isClosed ? msgs.topic.closed : "● " + msgs.topic.live}
-        </span>
+    <section className="pt-12 pb-8 px-4 sm:px-6 max-w-3xl mx-auto">
+      {/* Eyebrow row */}
+      <div className="flex items-center gap-2 mb-6 flex-wrap">
+        <Pill variant="default">
+          {msgs.topic.week.toUpperCase()} {week.toString().padStart(2, "0")}
+        </Pill>
+        <Pill variant="default">{(categoryLabels[category] ?? category).toUpperCase()}</Pill>
+        {isClosed ? (
+          <Pill variant="ghost">{msgs.topic.closed.toUpperCase()}</Pill>
+        ) : (
+          <Pill variant="live" icon={<span className="voices-live-dot" />}>
+            {msgs.topic.live.toUpperCase()}
+          </Pill>
+        )}
       </div>
 
-      {/* Question */}
+      {/* Headline */}
       <h1
-        className="text-2xl sm:text-3xl font-semibold text-[#14110d] leading-tight mb-3 bn-serif"
-        style={{ fontFamily: "Noto Serif Bengali, Georgia, serif" }}
+        className={`${headlineClass} text-4xl sm:text-5xl text-[var(--ink)] mb-5`}
       >
-        {locale === "en" && questionEn ? questionEn : question}
+        {headline}
       </h1>
 
-      {/* Context */}
+      {/* Context — set in italic Newsreader for English, in serif Bangla otherwise */}
       {context && (
         <p
-          className="text-sm text-[#3a342c] leading-relaxed mb-4 bn-text max-w-2xl"
-          style={{ fontFamily: "Hind Siliguri, Noto Sans Bengali, sans-serif" }}
+          className="text-[17px] sm:text-lg text-[var(--ink-soft)] leading-relaxed mb-7 max-w-2xl bn-text"
+          style={{
+            fontFamily: locale === "en"
+              ? "Newsreader, Georgia, serif"
+              : "Noto Serif Bengali, Newsreader, Georgia, serif",
+            fontStyle: locale === "en" ? "italic" : "normal",
+            fontWeight: 400,
+          }}
         >
           {context}
         </p>
       )}
 
+      {/* Decorative hairline */}
+      <hr className="voices-rule mb-5" />
+
       {/* Stats + CTA row */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
+      <div className="flex items-end justify-between gap-6 flex-wrap">
+        <div className="flex items-baseline gap-3">
           <span
-            className="text-2xl font-bold text-[#14110d]"
-            style={{ fontFamily: "JetBrains Mono, monospace" }}
+            className="voices-mono text-3xl sm:text-4xl font-semibold text-[var(--ink)]"
+            style={{ letterSpacing: "-0.02em" }}
           >
             {totalTakes.toLocaleString()}
           </span>
-          <span className="text-sm text-[#7a7163]">{msgs.topic.totalVoices}</span>
-          <span className="text-[#e2ddd1]">·</span>
-          <span className="text-sm text-[#7a7163]">
-            {isClosed ? msgs.topic.closed : `${msgs.topic.closesAt} ${timeLeft}`}
-          </span>
+          <div className="flex flex-col leading-tight">
+            <span className="voices-eyebrow">{msgs.topic.totalVoices.toUpperCase()}</span>
+            <span className="text-[13px] text-[var(--muted)] mt-0.5">
+              {isClosed ? msgs.topic.closed : `${msgs.topic.closesAt} ${timeLeft}`}
+            </span>
+          </div>
         </div>
 
         {!isClosed && (
           <Link href={`/record?topicId=${id}`}>
-            <Btn size="md" variant="primary">
+            <Btn size="md" variant="accent">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" />
+              </svg>
               {msgs.topic.addVoice}
             </Btn>
           </Link>

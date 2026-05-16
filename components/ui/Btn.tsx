@@ -3,7 +3,7 @@
 import { ButtonHTMLAttributes, forwardRef } from "react";
 import clsx from "clsx";
 
-type Variant = "primary" | "secondary" | "ghost" | "warn";
+type Variant = "accent" | "primary" | "secondary" | "ghost" | "warn";
 type Size = "sm" | "md" | "lg";
 
 interface BtnProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -14,19 +14,21 @@ interface BtnProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<Variant, string> = {
+  accent:
+    "bg-[var(--accent)] text-white hover:bg-[var(--accent-deep)] active:bg-[var(--accent-deep)]",
   primary:
-    "bg-[#1a1a1a] text-white hover:opacity-85 active:opacity-75 shadow-sm",
+    "bg-[var(--ink)] text-white hover:bg-[var(--ink-soft)] active:bg-black",
   secondary:
-    "bg-white text-[#14110d] border border-[#e2ddd1] hover:bg-[#f5f2ec] active:bg-[#ece9e2]",
+    "bg-[var(--surface)] text-[var(--ink)] border border-[var(--hairline)] hover:border-[var(--ink-soft)] active:bg-[var(--surface-soft)]",
   ghost:
-    "bg-transparent text-[#3a342c] hover:bg-[#ececec] active:bg-[#e2ddd1]",
-  warn: "bg-[#b85c1e] text-white hover:opacity-85 active:opacity-75",
+    "bg-transparent text-[var(--ink-soft)] hover:bg-[var(--accent-soft)] active:bg-[var(--hairline-soft)]",
+  warn: "bg-[var(--warn)] text-white hover:opacity-90 active:opacity-80",
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: "text-sm px-3 py-1.5 rounded-[6px]",
-  md: "text-sm px-4 py-2.5 rounded-[6px]",
-  lg: "text-base px-6 py-3 rounded-[12px]",
+  sm: "text-[13px] px-3 py-1.5 rounded-[8px]",
+  md: "text-sm px-4 py-2.5 rounded-[10px]",
+  lg: "text-[15px] px-6 py-3.5 rounded-[12px]",
 };
 
 export const Btn = forwardRef<HTMLButtonElement, BtnProps>(
@@ -48,9 +50,9 @@ export const Btn = forwardRef<HTMLButtonElement, BtnProps>(
         ref={ref}
         disabled={disabled || loading}
         className={clsx(
-          "inline-flex items-center justify-center gap-2 font-medium",
+          "inline-flex items-center justify-center gap-2 font-semibold tracking-tight",
           "disabled:opacity-50 disabled:cursor-not-allowed",
-          "focus-visible:outline-2 focus-visible:outline-[#1a1a1a] focus-visible:outline-offset-2",
+          "focus-visible:outline-2 focus-visible:outline-[var(--accent)] focus-visible:outline-offset-2",
           variantClasses[variant],
           sizeClasses[size],
           fullWidth && "w-full",

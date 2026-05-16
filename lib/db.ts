@@ -2,7 +2,12 @@ import { PrismaClient } from "@/app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 function createPrismaClient() {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+  const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL!,
+    max: 5,
+    idleTimeoutMillis: 60_000,   // recycle idle connections before Neon's 5-min sleep
+    connectionTimeoutMillis: 15_000,
+  });
   return new PrismaClient({ adapter });
 }
 

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale } from "@/lib/locale-context";
 import { PctBar } from "@/components/ui/PctBar";
+import { Pill } from "@/components/ui/Pill";
 
 interface ClusterResult {
   id: string;
@@ -64,10 +65,12 @@ export function ResultsPage() {
 
   if (!data) {
     return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-12">
-        <div className="space-y-3">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-16">
+        <div className="space-y-4">
+          <div className="h-4 w-24 rounded bg-[var(--hairline)] animate-pulse" />
+          <div className="h-10 w-2/3 rounded bg-[var(--hairline)] animate-pulse" />
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-12 rounded-[6px] bg-[#e2ddd1] animate-pulse" />
+            <div key={i} className="h-10 rounded bg-[var(--hairline-soft)] animate-pulse" />
           ))}
         </div>
       </div>
@@ -77,68 +80,75 @@ export function ResultsPage() {
   const topCluster = data.results[0];
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 pb-16">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <h1
-            className="text-2xl font-semibold text-[#14110d]"
-            style={{ fontFamily: "Noto Serif Bengali, Georgia, serif" }}
-          >
-            {msgs.results.title}
-          </h1>
-          {data.status === "live" && (
-            <span
-              className="text-xs px-2 py-0.5 rounded-full bg-[#edfbef] text-[#2d6a30] border border-[#c4dfc5]"
-              style={{ fontFamily: "JetBrains Mono, monospace" }}
-            >
-              ● LIVE
-            </span>
+      <div className="mb-10">
+        <div className="flex items-center gap-2 mb-5">
+          <Pill variant="default">RESULTS</Pill>
+          {data.status === "live" ? (
+            <Pill variant="live" icon={<span className="voices-live-dot" />}>LIVE</Pill>
+          ) : (
+            <Pill variant="ghost">CLOSED</Pill>
           )}
         </div>
-        <div className="flex items-baseline gap-2">
+
+        <h1 className="voices-display text-4xl sm:text-5xl text-[var(--ink)] mb-6">
+          {msgs.results.title}
+        </h1>
+
+        <hr className="voices-rule mb-5" />
+
+        <div className="flex items-baseline gap-3">
           <span
-            className="text-3xl font-bold text-[#14110d]"
-            style={{ fontFamily: "JetBrains Mono, monospace" }}
+            className="voices-mono text-4xl sm:text-5xl font-semibold text-[var(--ink)]"
+            style={{ letterSpacing: "-0.025em" }}
           >
             {data.totalVoices.toLocaleString()}
           </span>
-          <span className="text-[#7a7163] text-sm">{msgs.results.totalVoices}</span>
+          <span className="voices-eyebrow">{msgs.results.totalVoices.toUpperCase()}</span>
         </div>
       </div>
 
       {/* Bar chart */}
-      <section className="space-y-4 mb-10">
-        {data.results.map((r, idx) => (
-          <PctBar
-            key={r.id}
-            label={r.label}
-            pct={r.pct}
-            count={r.takeCount}
-            featured={idx === 0}
-          />
-        ))}
+      <section className="mb-12">
+        <div className="mb-5 flex items-center justify-between">
+          <span className="voices-eyebrow">DISTRIBUTION</span>
+          <span className="voices-eyebrow">{data.results.length} CLUSTERS</span>
+        </div>
+        <div className="space-y-5">
+          {data.results.map((r, idx) => (
+            <PctBar
+              key={r.id}
+              label={r.label}
+              pct={r.pct}
+              count={r.takeCount}
+              featured={idx === 0}
+              rank={idx}
+            />
+          ))}
+        </div>
       </section>
 
       {/* Featured quote */}
       {topCluster?.featuredQuote && (
-        <section className="mb-8">
-          <h2
-            className="text-sm font-semibold text-[#7a7163] uppercase tracking-wider mb-3"
-            style={{ fontFamily: "JetBrains Mono, monospace" }}
-          >
-            {msgs.results.featuredQuote}
-          </h2>
-          <blockquote
-            className="rounded-[12px] border border-[#e2ddd1] bg-white p-5"
-          >
-            <p
-              className="text-base text-[#14110d] leading-relaxed italic bn-text"
-              style={{ fontFamily: "Noto Serif Bengali, Georgia, serif" }}
+        <section className="mb-12">
+          <div className="mb-4">
+            <span className="voices-eyebrow">{msgs.results.featuredQuote.toUpperCase()}</span>
+          </div>
+          <blockquote className="voices-card p-7 sm:p-8 relative">
+            <span
+              className="absolute -top-2 left-6 voices-serif text-6xl leading-none"
+              style={{ color: "var(--accent)", fontWeight: 500 }}
             >
-              "{topCluster.featuredQuote}"
+              &ldquo;
+            </span>
+            <p
+              className="voices-quote text-xl sm:text-2xl text-[var(--ink)] leading-relaxed bn-serif pl-6"
+              style={{ fontFamily: "Noto Serif Bengali, Newsreader, Georgia, serif" }}
+            >
+              {topCluster.featuredQuote}
             </p>
-            <footer className="mt-2 text-xs text-[#7a7163]">
+            <footer className="mt-4 pl-6 voices-eyebrow">
               — {topCluster.label}
             </footer>
           </blockquote>
@@ -147,43 +157,44 @@ export function ResultsPage() {
 
       {/* Per-cluster summaries */}
       <section>
-        <h2
-          className="text-sm font-semibold text-[#7a7163] uppercase tracking-wider mb-4"
-          style={{ fontFamily: "JetBrains Mono, monospace" }}
-        >
-          {msgs.results.byCluster}
-        </h2>
+        <div className="mb-5">
+          <span className="voices-eyebrow">{msgs.results.byCluster.toUpperCase()}</span>
+        </div>
         <div className="space-y-3">
-          {data.results.map((r) => (
-            <div
-              key={r.id}
-              className="rounded-[12px] border border-[#e2ddd1] bg-white p-4"
-            >
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <h3
-                  className="text-sm font-semibold text-[#14110d] leading-snug bn-text"
-                  style={{ fontFamily: "Hind Siliguri, sans-serif" }}
-                >
-                  {r.label}
-                </h3>
+          {data.results.map((r, idx) => (
+            <div key={r.id} className="voices-card p-5">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-baseline gap-3 flex-1 min-w-0">
+                  <span
+                    className="voices-mono text-[11px] font-semibold shrink-0"
+                    style={{ color: "var(--muted)", letterSpacing: "0.08em" }}
+                  >
+                    {String(idx + 1).padStart(2, "0")}
+                  </span>
+                  <h3
+                    className="text-[15px] font-semibold text-[var(--ink)] leading-snug bn-text"
+                    style={{ fontFamily: "Hind Siliguri, sans-serif" }}
+                  >
+                    {r.label}
+                  </h3>
+                </div>
                 <span
-                  className="text-xs text-[#7a7163] shrink-0"
-                  style={{ fontFamily: "JetBrains Mono, monospace" }}
+                  className="voices-mono text-[12px] font-semibold shrink-0"
+                  style={{ color: "var(--ink-soft)" }}
                 >
-                  {r.pct}% · {r.takeCount} মতামত
+                  {r.pct}%
                 </span>
               </div>
               {r.summary && (
                 <p
-                  className="text-xs text-[#7a7163] leading-relaxed bn-text"
+                  className="text-[13px] text-[var(--ink-soft)] leading-relaxed bn-text pl-7"
                   style={{ fontFamily: "Hind Siliguri, sans-serif" }}
                 >
                   {r.summary}
                 </p>
               )}
-              <div className="flex gap-3 mt-2 text-xs text-[#7a7163]">
-                <span>↑ {r.upvotes}</span>
-                <span>↓ {r.downvotes}</span>
+              <div className="mt-3 pl-7 voices-eyebrow">
+                {r.takeCount} VOICES · ↑{r.upvotes} ↓{r.downvotes}
               </div>
             </div>
           ))}
