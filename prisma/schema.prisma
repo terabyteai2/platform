@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TopicCategory {
+  work
+  tech
+  society
+  cities
+  local
+}
+
+enum TopicStatus {
+  draft
+  scheduled
+  live
+  closed
+}
+
+enum VoteDirection {
+  up
+  down
+}
+
+enum AsrProvider {
+  deepgram
+  speechmatics
+  fallback
+}
+
+enum AiPurpose {
+  transcribe
+  cluster
+  seed
+  moderate
+}
+
+enum AiProvider {
+  deepgram
+  gemini_flash
+}
+
+enum ModerationAction {
+  flagged
+  hidden
+  approved
+  dismissed
+}
+
+model User {
+  id          String   @id @default(cuid())
+  displayName String?
+  email       String?  @unique
+  isAnon      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  takes            Take[]
+  votes            Vote[]
+  topicsCreated    Topic[]
+  moderationEvents ModerationEvent[]
+}
+
+model Topic {
+  id              String        @id @default(cuid())
+  week            Int           @unique
+  category        TopicCategory @default(society)
+  question        String        @db.VarChar(200)
+  questionEn      String?       @db.VarChar(200)
+  context         String?       @db.Text
+  opensAt         DateTime
+  closesAt        DateTime
+  status          TopicStatus   @default(draft)
+  createdByUserId String?
+  createdAt       DateTime      @default(now())
+
+  clusters  Cluster[]
+  takes     Take[]
+  aiCalls   AiCall[]
+  creator   User?     @relation(fields: [createdByUserId], references: [id])
+}
+
+model Cluster {
+  id           String   @id @default(cuid())
+  topicId      String
+  label        String   @db.VarChar(120)
+  summary      String?  @db.Text
+  isAiSeeded   Boolean  @default(false)
+  isMerged     Boolean  @default(false)
+  mergedIntoId String?
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  topic            Topic             @relation(fields: [topicId], references: [id])
+  takes            Take[]
+  votes            Vote[]
+  mergedInto       Cluster?          @relation("ClusterMerge", fields: [mergedIntoId], references: [id])
+  mergedClusters   Cluster[]         @relation("ClusterMerge")
+  moderationEvents ModerationEvent[]
+}
+
+model Take {
+  id                   String      @id @default(cuid())
+  topicId              String
+  clusterId            String?
+  userId               String
+  content              String      @db.Text
+  audioUrl             String?
+  durationMs           Int?
+  isAnon               Boolean     @default(true)
+  aiMatchScore         Float?
+  aiSuggestedClusterId String?
+  asrConfidence        Float?
+  asrProvider          AsrProvider @default(deepgram)
+  isFlagged            Boolean     @default(false)
+  isHidden             Boolean     @default(false)
+  isPending            Boolean     @default(false)
+  isPublished          Boolean     @default(false)
+  moderationReason     String?
+  createdAt            DateTime    @default(now())
+
+  topic            Topic             @relation(fields: [topicId], references: [id])
+  cluster          Cluster?          @relation(fields: [clusterId], references: [id])
+  user             User              @relation(fields: [userId], references: [id])
+  moderationEvents ModerationEvent[]
+  aiCalls          AiCall[]
+}
+
+model Vote {
+  id        String        @id @default(cuid())
+  clusterId String
+  userId    String
+  direction VoteDirection
+  createdAt DateTime      @default(now())
+
+  cluster Cluster @relation(fields: [clusterId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([clusterId, userId])
+}
+
+model ModerationEvent {
+  id              String           @id @default(cuid())
+  takeId          String?
+  clusterId       String?
+  reason          String
+  action          ModerationAction
+  moderatorUserId String?
+  createdAt       DateTime         @default(now())
+
+  take      Take?    @relation(fields: [takeId], references: [id])
+  cluster   Cluster? @relation(fields: [clusterId], references: [id])
+  moderator User?    @relation(fields: [moderatorUserId], references: [id])
+}
+
+model AiCall {
+  id              String     @id @default(cuid())
+  takeId          String?
+  topicId         String?
+  provider        AiProvider
+  purpose         AiPurpose
+  latencyMs       Int
+  success         Boolean
+  errorReason     String?
+  requestPayload  Json
+  responsePayload Json
+  createdAt       DateTime   @default(now())
+
+  take  Take?  @relation(fields: [takeId], references: [id])
+  topic Topic? @relation(fields: [topicId], references: [id])
+}

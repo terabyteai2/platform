@@ -1,0 +1,99 @@
+{
+  "nav": {
+    "home": "Home",
+    "results": "Results",
+    "past": "Past",
+    "admin": "Admin",
+    "login": "Login"
+  },
+  "topic": {
+    "voices": "voices",
+    "addVoice": "Add your voice",
+    "voteUp": "Agree",
+    "voteDown": "Disagree",
+    "totalVoices": "Total voices",
+    "closesAt": "Closes",
+    "closed": "Closed",
+    "live": "Live",
+    "noTopic": "No topic this week",
+    "sampleQuote": "A voice",
+    "week": "Week"
+  },
+  "record": {
+    "title": "Add your voice",
+    "step1Title": "Pick your position",
+    "step1Desc": "Which opinion cluster is closest to yours?",
+    "other": "Other",
+    "step2Title": "Record your take",
+    "holdToRecord": "Hold to record",
+    "banglaHint": "Speak in Bangla",
+    "maxDuration": "Max 60 seconds",
+    "recording": "Recording...",
+    "processing": "Processing...",
+    "next": "Next",
+    "back": "Back"
+  },
+  "review": {
+    "title": "Review your take",
+    "transcript": "Transcript",
+    "editHint": "Edit if needed",
+    "aiCluster": "AI suggested",
+    "switchCluster": "Switch cluster",
+    "newCluster": "Start a new cluster",
+    "confirm": "Confirm & publish",
+    "lowConfidence": "Please verify this transcript carefully",
+    "anonymous": "Stay anonymous",
+    "publishedName": "Publish with name",
+    "pending": "Pending",
+    "pendingDesc": "Your take will appear once more people submit similar opinions."
+  },
+  "results": {
+    "title": "Results",
+    "totalVoices": "Total voices",
+    "byCluster": "By cluster",
+    "featuredQuote": "Featured voice",
+    "themes": "Key themes"
+  },
+  "past": {
+    "title": "Past discussions",
+    "filter": "Filter",
+    "all": "All",
+    "loadMore": "Load more"
+  },
+  "admin": {
+    "compose": "Create new topic",
+    "question": "Question (Bangla)",
+    "questionEn": "Question (English, optional)",
+    "context": "Context",
+    "category": "Category",
+    "opensAt": "Opens at",
+    "closesAt": "Closes at",
+    "seedClusters": "Generate AI clusters",
+    "regenerate": "Regenerate",
+    "publish": "Publish",
+    "queue": "Moderation queue",
+    "flagged": "Flagged",
+    "approve": "Approve",
+    "hide": "Hide",
+    "dismiss": "Dismiss"
+  },
+  "auth": {
+    "login": "Login",
+    "email": "Email",
+    "sendMagicLink": "Send magic link",
+    "checkEmail": "Check your email",
+    "logout": "Logout"
+  },
+  "categories": {
+    "work": "Work",
+    "tech": "Tech",
+    "society": "Society",
+    "cities": "Cities",
+    "local": "Local"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "topicClosed": "This topic has closed.",
+    "flagged": "Your take has been sent for review."
+  }
+}

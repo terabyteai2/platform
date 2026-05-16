@@ -1,0 +1,17 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run db:generate && npm run build",
+  "env": {
+    "DATABASE_URL": "@voices-database-url",
+    "SUPABASE_URL": "@voices-supabase-url",
+    "SUPABASE_SERVICE_ROLE_KEY": "@voices-supabase-service-role-key",
+    "DEEPGRAM_API_KEY": "@voices-deepgram-api-key",
+    "SPEECHMATICS_API_KEY": "@voices-speechmatics-api-key",
+    "CLOUDFLARE_ACCOUNT_ID": "@voices-cloudflare-account-id",
+    "CLOUDFLARE_API_TOKEN": "@voices-cloudflare-api-token",
+    "GEMINI_API_KEY": "@voices-gemini-api-key",
+    "RESEND_API_KEY": "@voices-resend-api-key",
+    "NEXT_PUBLIC_SITE_URL": "@voices-site-url",
+    "ADMIN_EMAILS": "@voices-admin-emails"
+  }
+}
