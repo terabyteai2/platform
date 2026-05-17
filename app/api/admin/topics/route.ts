@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
+import { selectTopicImage, topicImageToData } from "@/lib/topic-image";
 import { z } from "zod";
 
 const schema = z.object({
@@ -43,6 +44,24 @@ export async function POST(req: Request) {
       createdAt: true,
     },
   });
+
+  // Best-effort: auto-fetch a cartoon-style image for this topic. Non-fatal — a
+  // missing image must never block topic creation. The active-topic API will
+  // simply return image: null if this fails.
+  try {
+    const image = await selectTopicImage({
+      id: topic.id,
+      category: topic.category,
+      question: topic.question,
+      questionEn: topic.questionEn,
+      context: topic.context,
+    });
+    if (image) {
+      await db.topic.update({ where: { id: topic.id }, data: topicImageToData(image) });
+    }
+  } catch (err) {
+    console.warn(`[admin/topics POST] image fetch failed for ${topic.id}:`, err);
+  }
 
   return Response.json({ topic }, { status: 201 });
 }

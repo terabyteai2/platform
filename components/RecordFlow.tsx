@@ -32,60 +32,6 @@ interface TopicData {
 
 type Step = "pick" | "record" | "processing";
 
-// ─── Web Speech API minimal types ──────────────────────────────────────────
-// Browsers expose this API but TS doesn't ship types. We only touch the bits
-// we use.
-interface SRAlternative {
-  transcript: string;
-  confidence: number;
-}
-interface SRResult {
-  isFinal: boolean;
-  readonly length: number;
-  [index: number]: SRAlternative;
-}
-interface SRResultList {
-  readonly length: number;
-  [index: number]: SRResult;
-}
-interface SREvent extends Event {
-  resultIndex: number;
-  results: SRResultList;
-}
-interface SRErrorEvent extends Event {
-  error:
-    | "no-speech"
-    | "aborted"
-    | "audio-capture"
-    | "network"
-    | "not-allowed"
-    | "service-not-allowed"
-    | "bad-grammar"
-    | "language-not-supported"
-    | (string & {});
-}
-interface SpeechRecognitionLike extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  onresult: ((ev: SREvent) => void) | null;
-  onerror: ((ev: SRErrorEvent) => void) | null;
-  onend: ((ev: Event) => void) | null;
-  start(): void;
-  stop(): void;
-  abort(): void;
-}
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
-
-function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as {
-    SpeechRecognition?: SpeechRecognitionCtor;
-    webkitSpeechRecognition?: SpeechRecognitionCtor;
-  };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
-
 export function RecordFlow() {
   const { locale, msgs } = useLocale();
   const { requireName } = useCurrentUser();
@@ -108,36 +54,29 @@ export function RecordFlow() {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Live transcript state (Web Speech API)
+  // Live transcript state. Deepgram streams into the editable textarea; the
+  // user's edits are treated as the source of truth when sending.
   const [finalTranscript, setFinalTranscript] = useState("");
   const [interimTranscript, setInterimTranscript] = useState("");
   const [captionsStatus, setCaptionsStatus] = useState<string | null>(null);
-  const [resultCount, setResultCount] = useState(0);
-  const [captionsLang, setCaptionsLang] = useState<"bn-BD" | "en-US">(
-    locale === "en" ? "en-US" : "bn-BD"
-  );
-  // Lazy init — runs once on the client, undefined during SSR which the UI
-  // treats as "unknown / show nothing".
-  const [liveCaptionsSupported] = useState<boolean | null>(() => {
-    if (typeof window === "undefined") return null;
-    return getSpeechRecognitionCtor() != null;
-  });
 
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunks = useRef<BlobPart[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   // Deepgram live streaming
   const deepgramWs = useRef<WebSocket | null>(null);
-  const deepgramQueue = useRef<Blob[]>([]); // chunks captured before WS is open
+  const deepgramQueue = useRef<ArrayBuffer[]>([]); // PCM chunks captured before WS is open
   const deepgramReady = useRef(false);
   const keepAliveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const audioProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const finalRef = useRef("");
-  const transcriptScrollRef = useRef<HTMLDivElement | null>(null);
+  const transcriptScrollRef = useRef<HTMLTextAreaElement | null>(null);
   // Synchronous flag — React state setters are async, so we can't read
-  // `recording` from inside SpeechRecognition's `onend` closure to decide
-  // whether to restart. The ref reflects the truth right now.
+  // `recording` from async media/socket callbacks. The ref reflects the truth
+  // right now.
   const isRecordingRef = useRef(false);
 
   // Load topic (falling back to active if no id supplied)
@@ -178,9 +117,9 @@ export function RecordFlow() {
       isRecordingRef.current = false;
       if (timerRef.current) clearInterval(timerRef.current);
       if (keepAliveRef.current) clearInterval(keepAliveRef.current);
-      try { recognitionRef.current?.abort(); } catch {}
       try { mediaRecorder.current?.stop(); } catch {}
       try { deepgramWs.current?.close(); } catch {}
+      stopPcmStreaming();
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
@@ -191,22 +130,6 @@ export function RecordFlow() {
     if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [finalTranscript, interimTranscript]);
-
-  // Watchdog: if we've been recording for ~4 seconds with zero captions yet,
-  // surface a hint. Audio is still captured — this is purely about the live
-  // preview not the upload.
-  useEffect(() => {
-    if (!recording) return;
-    if (resultCount > 0) return;
-    const t = setTimeout(() => {
-      if (isRecordingRef.current && resultCount === 0 && !captionsStatus) {
-        setCaptionsStatus(
-          "Live captions can't reach Google's speech service from this network. Audio is being recorded normally — the server will transcribe it after you tap Send."
-        );
-      }
-    }, 4000);
-    return () => clearTimeout(t);
-  }, [recording, resultCount, captionsStatus, captionsLang]);
 
   function pickMimeType(): string {
     if (typeof MediaRecorder === "undefined") return "";
@@ -223,103 +146,11 @@ export function RecordFlow() {
     return "";
   }
 
-  function startLiveCaptions(langOverride?: "bn-BD" | "en-US") {
-    setCaptionsStatus(null);
-    const Ctor = getSpeechRecognitionCtor();
-    if (!Ctor) {
-      setCaptionsStatus("Live captions aren't supported in this browser.");
-      return;
-    }
-    try {
-      const recog = new Ctor();
-      recog.continuous = true;
-      recog.interimResults = true;
-      const lang = langOverride ?? captionsLang;
-      recog.lang = lang;
-
-      // Lightweight diagnostics — visible in DevTools so we can tell whether
-      // the recognizer is actually getting audio or silently failing.
-      console.log(`[captions] starting · lang=${lang}`);
-
-      recog.onresult = (ev) => {
-        let interim = "";
-        let gotAny = false;
-        for (let i = ev.resultIndex; i < ev.results.length; i++) {
-          const res = ev.results[i];
-          const text = res[0]?.transcript ?? "";
-          if (!text) continue;
-          gotAny = true;
-          if (res.isFinal) {
-            finalRef.current = (finalRef.current ? finalRef.current + " " : "") + text;
-            setFinalTranscript(finalRef.current);
-            console.log(`[captions] final  «${text}»`);
-          } else {
-            interim += text;
-          }
-        }
-        setInterimTranscript(interim);
-        if (gotAny) setResultCount((n) => n + 1);
-      };
-
-      recog.onerror = (ev) => {
-        const code = ev?.error || "";
-        console.warn(`[captions] error · ${code}`);
-        if (code === "no-speech" || code === "aborted") return;
-        if (code === "not-allowed" || code === "service-not-allowed") {
-          setCaptionsStatus("Live captions blocked — mic access denied or browser policy.");
-        } else if (code === "audio-capture") {
-          setCaptionsStatus("Live captions can't access the mic right now.");
-        } else if (code === "language-not-supported") {
-          setCaptionsStatus(
-            `Live captions: ${lang} isn't supported. Try switching language above.`
-          );
-        } else if (code === "network") {
-          setCaptionsStatus("Live captions need internet — recording continues without them.");
-        } else if (code) {
-          setCaptionsStatus(`Live captions: ${code}`);
-        }
-      };
-
-      recog.onend = () => {
-        console.log("[captions] end");
-        if (isRecordingRef.current && recognitionRef.current === recog) {
-          try {
-            recog.start();
-            console.log("[captions] restarted");
-          } catch {
-            // Already running / cleanup in flight.
-          }
-        }
-      };
-
-      recog.start();
-      recognitionRef.current = recog;
-    } catch (err) {
-      console.warn("[captions] start threw", err);
-      setCaptionsStatus(
-        err instanceof Error
-          ? `Live captions failed to start: ${err.message}`
-          : "Live captions failed to start."
-      );
-    }
-  }
-
-  function stopLiveCaptions() {
-    const recog = recognitionRef.current;
-    recognitionRef.current = null;
-    if (recog) {
-      try { recog.onend = null; } catch {}
-      try { recog.onerror = null; } catch {}
-      try { recog.stop(); } catch {}
-    }
-    setInterimTranscript("");
-  }
-
   // ─── Deepgram live streaming ────────────────────────────────────────────
-  // Used when Web Speech is unavailable / unreachable. Streams MediaRecorder
-  // chunks over a WebSocket and gets real-time transcripts in <500ms.
+  // Streams MediaRecorder chunks over a WebSocket and gets real-time
+  // transcripts in <500ms.
 
-  async function startDeepgramStream() {
+  async function startDeepgramStream(sampleRate: number) {
     // Tear down any stale instance first. Re-record etc. can leave a previous
     // socket in CLOSING state and its callbacks would race with the new one.
     stopDeepgramStream();
@@ -334,11 +165,13 @@ export function RecordFlow() {
       if (!token) throw new Error("token missing");
 
       const params = new URLSearchParams({
+        encoding: "linear16",
         language: "bn",
         model: "nova-3",
         interim_results: "true",
+        sample_rate: String(sampleRate),
+        channels: "1",
         punctuate: "true",
-        smart_format: "true",
       });
       const url = `wss://api.deepgram.com/v1/listen?${params}`;
       // Deepgram WebSocket auth uses the subprotocol header:
@@ -369,8 +202,8 @@ export function RecordFlow() {
         }
         deepgramReady.current = true;
         console.log("[deepgram] WS open");
-        for (const blob of deepgramQueue.current) {
-          try { ws.send(blob); } catch {}
+        for (const chunk of deepgramQueue.current) {
+          try { ws.send(chunk); } catch {}
         }
         deepgramQueue.current = [];
       };
@@ -386,11 +219,10 @@ export function RecordFlow() {
             if (msg.is_final || msg.speech_final) {
               appendDeepgramFinal(text);
               setInterimTranscript("");
-              setResultCount((n) => n + 1);
               console.log(`[deepgram] final «${text}»`);
             } else {
               setInterimTranscript(text);
-              setResultCount((n) => n + 1);
+              setFinalTranscript(transcriptWithInterim(text));
             }
           }
         } catch {
@@ -421,7 +253,7 @@ export function RecordFlow() {
     }
   }
 
-  function sendChunkToDeepgram(chunk: Blob) {
+  function sendChunkToDeepgram(chunk: ArrayBuffer) {
     const ws = deepgramWs.current;
     if (!ws) {
       deepgramQueue.current.push(chunk);
@@ -434,6 +266,64 @@ export function RecordFlow() {
     }
   }
 
+  function startPcmStreaming(stream: MediaStream): number {
+    const AudioContextCtor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextCtor) {
+      throw new Error("This browser can't stream live captions from the microphone.");
+    }
+
+    stopPcmStreaming();
+    const ctx = new AudioContextCtor();
+    void ctx.resume().catch(() => {});
+    const source = ctx.createMediaStreamSource(stream);
+    const processor = ctx.createScriptProcessor(4096, 1, 1);
+
+    processor.onaudioprocess = (event) => {
+      if (!isRecordingRef.current || paused) return;
+      const input = event.inputBuffer.getChannelData(0);
+      const pcm = new Int16Array(input.length);
+      for (let i = 0; i < input.length; i++) {
+        const sample = Math.max(-1, Math.min(1, input[i]));
+        pcm[i] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+      }
+      sendChunkToDeepgram(pcm.buffer.slice(0));
+    };
+
+    source.connect(processor);
+    // Some browsers stop firing ScriptProcessor callbacks unless it is
+    // connected to an output. Gain 0 keeps this silent.
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    processor.connect(gain);
+    gain.connect(ctx.destination);
+
+    audioContextRef.current = ctx;
+    audioSourceRef.current = source;
+    audioProcessorRef.current = processor;
+    return ctx.sampleRate;
+  }
+
+  function stopPcmStreaming() {
+    const processor = audioProcessorRef.current;
+    const source = audioSourceRef.current;
+    audioProcessorRef.current = null;
+    audioSourceRef.current = null;
+    if (processor) {
+      try { processor.onaudioprocess = null; } catch {}
+      try { processor.disconnect(); } catch {}
+    }
+    if (source) {
+      try { source.disconnect(); } catch {}
+    }
+    const ctx = audioContextRef.current;
+    audioContextRef.current = null;
+    if (ctx) {
+      try { void ctx.close(); } catch {}
+    }
+  }
+
   /**
    * Append a Deepgram final fragment to the editable transcript. We read the
    * authoritative current value from `finalRef.current` (which the textarea
@@ -443,8 +333,24 @@ export function RecordFlow() {
     const text = fragment.trim();
     if (!text) return;
     const prev = finalRef.current.trimEnd();
+    if (prev && prev.endsWith(text)) return;
     finalRef.current = (prev ? prev + " " : "") + text;
     setFinalTranscript(finalRef.current);
+  }
+
+  function transcriptWithInterim(fragment: string): string {
+    const text = fragment.trim();
+    if (!text) return finalRef.current;
+    const prev = finalRef.current.trimEnd();
+    if (prev && prev.endsWith(text)) return prev;
+    return (prev ? prev + " " : "") + text;
+  }
+
+  function commitInterimTranscript() {
+    const text = interimTranscript.trim();
+    if (!text) return;
+    appendDeepgramFinal(text);
+    setInterimTranscript("");
   }
 
   function stopDeepgramStream() {
@@ -485,27 +391,11 @@ export function RecordFlow() {
     }
   }
 
-  function switchCaptionsLang(next: "bn-BD" | "en-US") {
-    setCaptionsLang(next);
-    if (!isRecordingRef.current) return;
-    // Hot-swap while recording: stop the current recognizer (and prevent its
-    // onend from restarting it on the old language), then start a fresh one.
-    const old = recognitionRef.current;
-    recognitionRef.current = null;
-    if (old) {
-      try { old.onend = null; } catch {}
-      try { old.onerror = null; } catch {}
-      try { old.stop(); } catch {}
-    }
-    startLiveCaptions(next);
-  }
-
   async function startRecording() {
     setSubmitError(null);
     setAudioBlob(null);
     setFinalTranscript("");
     setInterimTranscript("");
-    setResultCount(0);
     finalRef.current = "";
 
     if (
@@ -549,8 +439,6 @@ export function RecordFlow() {
     mr.ondataavailable = (e) => {
       if (e.data.size > 0) {
         chunks.current.push(e.data);
-        // Also stream the same chunk to Deepgram for live captions.
-        sendChunkToDeepgram(e.data);
       }
     };
 
@@ -569,16 +457,24 @@ export function RecordFlow() {
       isRecordingRef.current = false;
       setRecording(false);
       if (timerRef.current) clearInterval(timerRef.current);
-      stopLiveCaptions();
+      stopPcmStreaming();
       stopDeepgramStream();
     };
 
     isRecordingRef.current = true;
     setRecording(true);
     setElapsed(0);
-    // Open the Deepgram live-streaming WebSocket first (async). MediaRecorder
-    // chunks fired before the WS is ready are queued and flushed on open.
-    startDeepgramStream();
+    // Deepgram gets raw PCM from Web Audio for stable live captions; the
+    // MediaRecorder still creates the saved audio file separately.
+    try {
+      const sampleRate = startPcmStreaming(stream);
+      startDeepgramStream(sampleRate);
+    } catch (err) {
+      console.warn("[captions] PCM streaming unavailable:", err);
+      setCaptionsStatus(
+        err instanceof Error ? err.message : "Live captions couldn't start."
+      );
+    }
     mr.start(250);
 
     timerRef.current = setInterval(() => {
@@ -594,6 +490,7 @@ export function RecordFlow() {
 
   function stopRecording() {
     isRecordingRef.current = false;
+    commitInterimTranscript();
     const state = mediaRecorder.current?.state;
     if (state === "recording" || state === "paused") {
       mediaRecorder.current?.stop();
@@ -604,7 +501,7 @@ export function RecordFlow() {
     }
     setRecording(false);
     setPaused(false);
-    stopLiveCaptions();
+    stopPcmStreaming();
     stopDeepgramStream();
   }
 
@@ -624,17 +521,22 @@ export function RecordFlow() {
     // them. Send periodic KeepAlive pings so Deepgram doesn't drop us on its
     // silence timeout.
     startKeepAlive();
+    if (audioContextRef.current?.state === "running") {
+      void audioContextRef.current.suspend().catch(() => {});
+    }
   }
 
   function resumeRecording() {
     if (mediaRecorder.current?.state !== "paused") return;
     stopKeepAlive();
+    if (audioContextRef.current?.state === "suspended") {
+      void audioContextRef.current.resume().catch(() => {});
+    }
     // Safety net: if the socket died despite keepalive, spin up a new one.
-    // Note: in this case Deepgram won't decode the post-resume chunks (no
-    // header), so transcripts for the continuation segment may be empty.
     if (!deepgramWs.current || deepgramWs.current.readyState !== WebSocket.OPEN) {
-      console.warn("[deepgram] socket dropped during pause — reopening (continuation may not transcribe)");
-      startDeepgramStream();
+      console.warn("[deepgram] socket dropped during pause — reopening");
+      const sampleRate = audioContextRef.current?.sampleRate ?? 48000;
+      startDeepgramStream(sampleRate);
     }
     mediaRecorder.current.resume();
     setPaused(false);
@@ -670,7 +572,6 @@ export function RecordFlow() {
     setElapsed(0);
     setSubmitError(null);
     setCaptionsStatus(null);
-    setResultCount(0);
     // Make sure no captioning socket is left over from the previous attempt.
     stopDeepgramStream();
   }
@@ -777,7 +678,7 @@ export function RecordFlow() {
   if (!topic) {
     return (
       <div className="max-w-xl mx-auto px-4 pt-16 text-center space-y-2">
-        <span className="voices-eyebrow">LOADING</span>
+        <span className="voices-eyebrow">{msgs.admin.loading}</span>
         <p className="text-[var(--muted)] bn-text">লোড হচ্ছে…</p>
       </div>
     );
@@ -802,16 +703,14 @@ export function RecordFlow() {
         >
           আপলোড হচ্ছে…
         </p>
-        <p className="text-sm text-[var(--muted)]">
-          Saving your edited transcript — no re-processing needed.
+        <p className="text-sm text-[var(--muted)]" style={{ fontFamily: "Hind Siliguri, sans-serif" }}>
+          {msgs.record.savingHint}
         </p>
       </div>
     );
   }
 
   // ─── Main UI ──────────────────────────────────────────────────────────────
-
-  const liveText = (finalTranscript + " " + interimTranscript).trim();
 
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 pt-10 pb-16">
@@ -833,11 +732,10 @@ export function RecordFlow() {
                 loading="eager"
               />
             </div>
-            {(topic.image.creditName || topic.image.source) && (
+            {topic.image.source === "unsplash" && topic.image.creditName && (
               <figcaption className="mt-2 voices-eyebrow normal-case tracking-normal">
+                Photo by{" "}
                 {topic.image.creditUrl ? (
-                  <>
-                    Photo by{" "}
                     <a
                       href={topic.image.creditUrl}
                       target="_blank"
@@ -846,24 +744,18 @@ export function RecordFlow() {
                     >
                       {topic.image.creditName}
                     </a>
-                    {topic.image.source === "unsplash" && (
-                      <>
-                        {" "}
-                        on{" "}
-                        <a
-                          href="https://unsplash.com/?utm_source=voices_discussion_platform&utm_medium=referral"
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
-                        >
-                          Unsplash
-                        </a>
-                      </>
-                    )}
-                  </>
                 ) : (
-                  <>Image: {topic.image.creditName ?? topic.image.source}</>
-                )}
+                  topic.image.creditName
+                )}{" "}
+                on{" "}
+                <a
+                  href="https://unsplash.com/?utm_source=voices_discussion_platform&utm_medium=referral"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+                >
+                  Unsplash
+                </a>
               </figcaption>
             )}
           </figure>
@@ -885,26 +777,13 @@ export function RecordFlow() {
 
       {/* Step 1: Pick cluster (optional) */}
       {step === "pick" && (
-        <div className="space-y-6">
-          <div>
-            <span className="voices-eyebrow">STEP 1 OF 2 · OPTIONAL</span>
-            <h2
-              className="mt-2 voices-display-bn text-xl sm:text-2xl text-[var(--ink)] bn-text"
-              style={{ fontFamily: "Hind Siliguri, sans-serif", fontWeight: 600 }}
-            >
-              {msgs.record.step1Title}
-            </h2>
-            <p
-              className="mt-1.5 text-sm text-[var(--muted)] bn-text"
-              style={{ fontFamily: "Hind Siliguri, sans-serif" }}
-            >
-              {msgs.record.step1Desc}
-              {" "}
-              <span className="text-[var(--ink-soft)]">
-                Don&apos;t see your view? Skip — the AI will place it after.
-              </span>
-            </p>
-          </div>
+        <div className="space-y-5">
+          <h2
+            className="voices-display-bn text-xl sm:text-2xl text-[var(--ink)] bn-text"
+            style={{ fontFamily: "Hind Siliguri, sans-serif", fontWeight: 600 }}
+          >
+            {msgs.record.step1Title}
+          </h2>
 
           {topic.clusters.length > 0 ? (
             <div className="flex flex-wrap gap-2">
@@ -926,11 +805,9 @@ export function RecordFlow() {
                 }
               />
             </div>
-          ) : (
-            <p className="voices-eyebrow">NO CLUSTERS YET — YOU&apos;LL BE THE FIRST.</p>
-          )}
+          ) : null}
 
-          <div className="pt-2 flex flex-col sm:flex-row gap-2">
+          <div className="pt-2">
             <Btn
               onClick={() => setStep("record")}
               size="lg"
@@ -938,7 +815,7 @@ export function RecordFlow() {
               fullWidth
             >
               <Icon.Mic size={16} sw={2} />
-              {selectedClusterId ? msgs.record.next : "Skip & record"}
+              {selectedClusterId ? msgs.record.next : msgs.record.skip}
               <Icon.ArrowRight size={16} sw={2} />
             </Btn>
           </div>
@@ -956,17 +833,12 @@ export function RecordFlow() {
             {msgs.record.back.toUpperCase()}
           </button>
 
-          <div>
-            <span className="voices-eyebrow">
-              STEP 2 OF 2 · {recording ? "RECORDING" : audioBlob ? "REVIEW" : "TAP TO START"}
-            </span>
-            <h2
-              className="mt-2 voices-display-bn text-xl sm:text-2xl text-[var(--ink)] bn-text"
-              style={{ fontFamily: "Hind Siliguri, sans-serif", fontWeight: 600 }}
-            >
-              {msgs.record.step2Title}
-            </h2>
-          </div>
+          <h2
+            className="voices-display-bn text-xl sm:text-2xl text-[var(--ink)] bn-text"
+            style={{ fontFamily: "Hind Siliguri, sans-serif", fontWeight: 600 }}
+          >
+            {msgs.record.step2Title}
+          </h2>
 
           {/* Timer + waveform line */}
           <div className="flex items-center justify-between gap-4">
@@ -1007,7 +879,7 @@ export function RecordFlow() {
                       className="voices-eyebrow"
                       style={{ color: "var(--live)", letterSpacing: "0.16em" }}
                     >
-                      LISTENING · {captionsLang === "bn-BD" ? "বাং" : "EN"}
+                      {msgs.record.listening}
                     </span>
                   </>
                 ) : recording && paused ? (
@@ -1021,76 +893,44 @@ export function RecordFlow() {
                       style={{ background: "var(--ink-soft)" }}
                     />
                     <span className="voices-eyebrow ml-2" style={{ color: "var(--ink-soft)" }}>
-                      PAUSED · EDIT FREELY
+                      {msgs.record.pausedEdit}
                     </span>
                   </>
                 ) : audioBlob ? (
                   <>
                     <Icon.Check size={11} sw={2.4} color="var(--accent)" />
-                    <span className="voices-eyebrow">CAPTURED</span>
+                    <span className="voices-eyebrow">{msgs.record.captured}</span>
                   </>
                 ) : (
                   <>
                     <Icon.Mic size={11} sw={2.2} color="var(--muted)" />
-                    <span className="voices-eyebrow">READY</span>
+                    <span className="voices-eyebrow">{msgs.record.ready}</span>
                   </>
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
-                {/* Language toggle — picks the SpeechRecognition lang */}
-                {liveCaptionsSupported !== false && (
-                  <div
-                    className="flex rounded-[6px] overflow-hidden border"
-                    style={{ borderColor: "var(--hairline)" }}
-                  >
-                    {(["bn-BD", "en-US"] as const).map((l) => {
-                      const active = captionsLang === l;
-                      return (
-                        <button
-                          key={l}
-                          type="button"
-                          onClick={() => switchCaptionsLang(l)}
-                          className={clsx(
-                            "voices-mono text-[10px] font-semibold px-2 py-1 transition-colors",
-                            active
-                              ? "bg-[var(--accent)] text-white"
-                              : "text-[var(--ink-soft)] hover:bg-[var(--accent-soft)]"
-                          )}
-                          style={{ letterSpacing: "0.08em" }}
-                          aria-pressed={active}
-                        >
-                          {l === "bn-BD" ? "বাং" : "EN"}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-                {liveText && (
-                  <span className="voices-mono text-[10px]" style={{ color: "var(--muted)" }}>
-                    {liveText.length}c
-                  </span>
-                )}
-              </div>
+              {/* Right slot intentionally empty — language toggle and char
+                  counter were removed to simplify the chrome. */}
             </div>
 
             {/* Body — editable textarea, captions append into it */}
             <div className="px-4 sm:px-5 py-3" aria-live="polite">
               <textarea
-                ref={transcriptScrollRef as unknown as React.RefObject<HTMLTextAreaElement>}
+                ref={transcriptScrollRef}
                 value={finalTranscript}
                 onChange={(e) => {
                   // User edits become the new ground truth. Mirror to the ref
                   // so the next Deepgram-final appends after the edited text.
                   finalRef.current = e.target.value;
+                  setInterimTranscript("");
                   setFinalTranscript(e.target.value);
                 }}
                 placeholder={
                   recording
-                    ? "শুনছি… কথা বলুন। (Listening — speak now.)"
+                    ? msgs.record.transcriptPlaceholderListening
                     : audioBlob
-                      ? "Edit if needed, then tap Send below."
-                      : "Tap the mic to start. Your words will appear here — and you can edit them anytime."
+                      ? msgs.record.transcriptPlaceholderCaptured
+                      : msgs.record.transcriptPlaceholderReady
                 }
                 rows={5}
                 className="w-full resize-y bg-transparent text-[18px] sm:text-[19px] leading-relaxed bn-text text-[var(--ink)] placeholder:text-[var(--muted)] focus:outline-none p-0"
@@ -1100,35 +940,10 @@ export function RecordFlow() {
                   maxHeight: 280,
                 }}
               />
-              {/* Interim line — what Deepgram thinks you're saying right now */}
-              {recording && !paused && interimTranscript && (
-                <div
-                  className="mt-2 pt-2 border-t flex items-start gap-2"
-                  style={{ borderColor: "var(--hairline-soft)" }}
-                >
-                  <span
-                    className="voices-mono text-[10px] font-semibold shrink-0 mt-1"
-                    style={{ color: "var(--live)", letterSpacing: "0.1em" }}
-                  >
-                    →
-                  </span>
-                  <p
-                    className="text-[15px] leading-snug bn-text flex-1 m-0"
-                    style={{
-                      fontFamily: "Hind Siliguri, sans-serif",
-                      color: "var(--ink-soft)",
-                      opacity: 0.75,
-                    }}
-                  >
-                    {interimTranscript}
-                    <span className="voices-caret" aria-hidden="true" />
-                  </p>
-                </div>
-              )}
             </div>
           </div>
 
-          {(captionsStatus || liveCaptionsSupported === false) && (
+          {captionsStatus && (
             <p
               className="text-[12px] leading-snug text-center px-2"
               style={{
@@ -1136,64 +951,44 @@ export function RecordFlow() {
                 fontFamily: "Hind Siliguri, sans-serif",
               }}
             >
-              {captionsStatus ||
-                "Live captions aren't supported in this browser. Audio is being recorded normally — the server will transcribe it."}
+              {captionsStatus}
             </p>
           )}
 
-          {/* Mic button — start ↔ pause ↔ resume */}
+          {/* Mic button — start ↔ pause ↔ resume. A separate end button stops
+              the recorder and reveals preview + send. */}
           <div className="flex flex-col items-center gap-3 pt-1">
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                onClick={toggleRecording}
-                disabled={elapsed >= 60 && !recording}
-                className={clsx(
-                  "w-20 h-20 rounded-full flex items-center justify-center select-none",
-                  "transition-all duration-150",
-                  "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]",
-                  recording && !paused
-                    ? "bg-[var(--warn)] text-white shadow-[0_8px_32px_-8px_var(--warn)] animate-pulse"
-                    : "bg-[var(--accent)] text-white hover:bg-[var(--accent-deep)] active:scale-95 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5)]",
-                  "disabled:opacity-40 disabled:cursor-not-allowed"
-                )}
-                aria-label={
-                  !recording
-                    ? "Start recording"
-                    : paused
-                      ? "Resume recording"
-                      : "Pause recording"
-                }
-              >
-                {recording && !paused ? (
-                  /* Pause icon — two vertical bars */
-                  <span className="flex gap-1.5">
-                    <span className="w-1.5 h-7 rounded-[2px] bg-white" />
-                    <span className="w-1.5 h-7 rounded-[2px] bg-white" />
-                  </span>
-                ) : (
-                  <Icon.Mic size={28} color="white" sw={1.8} />
-                )}
-              </button>
-
-              {(recording || audioBlob) && (
-                <button
-                  type="button"
-                  onClick={stopRecording}
-                  disabled={!recording && !!audioBlob}
-                  className="px-4 py-2.5 rounded-[10px] border text-[13px] font-semibold transition-colors voices-mono"
-                  style={{
-                    background: "var(--surface)",
-                    borderColor: "var(--hairline)",
-                    color: "var(--ink)",
-                    letterSpacing: "0.06em",
-                  }}
-                  aria-label="Stop recording (keeps captured audio)"
-                >
-                  ■ STOP
-                </button>
+            <button
+              type="button"
+              onClick={toggleRecording}
+              disabled={elapsed >= 60 && !recording}
+              className={clsx(
+                "w-20 h-20 rounded-full flex items-center justify-center select-none",
+                "transition-all duration-150",
+                "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]",
+                recording && !paused
+                  ? "bg-[var(--warn)] text-white shadow-[0_8px_32px_-8px_var(--warn)] animate-pulse"
+                  : "bg-[var(--accent)] text-white hover:bg-[var(--accent-deep)] active:scale-95 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5)]",
+                "disabled:opacity-40 disabled:cursor-not-allowed"
               )}
-            </div>
+              aria-label={
+                !recording
+                  ? msgs.record.tapStart
+                  : paused
+                    ? msgs.record.tapResume
+                    : msgs.record.tapPause
+              }
+            >
+              {recording && !paused ? (
+                /* Pause icon — two vertical bars */
+                <span className="flex gap-1.5">
+                  <span className="w-1.5 h-7 rounded-[2px] bg-white" />
+                  <span className="w-1.5 h-7 rounded-[2px] bg-white" />
+                </span>
+              ) : (
+                <Icon.Mic size={28} color="white" sw={1.8} />
+              )}
+            </button>
 
             <p
               className="text-sm font-semibold text-[var(--ink)] bn-text"
@@ -1201,13 +996,26 @@ export function RecordFlow() {
             >
               {!recording
                 ? audioBlob
-                  ? "Tap mic to record more"
-                  : "Tap mic to start"
+                  ? msgs.record.tapMore
+                  : msgs.record.tapStart
                 : paused
-                  ? "Paused — tap to resume, edit text above, or Stop"
-                  : "Recording — tap to pause"}
+                  ? msgs.record.tapResume
+                  : msgs.record.tapPause}
             </p>
             <p className="voices-eyebrow">{msgs.record.banglaHint}</p>
+
+            {recording && (
+              <Btn
+                type="button"
+                onClick={stopRecording}
+                size="md"
+                variant="warn"
+                className="mt-1"
+              >
+                <span className="w-3 h-3 rounded-[2px] bg-current" aria-hidden="true" />
+                {msgs.record.stop}
+              </Btn>
+            )}
           </div>
 
           {/* Error banner */}
@@ -1243,7 +1051,7 @@ export function RecordFlow() {
                   variant="secondary"
                 >
                   <Icon.X size={14} sw={2} />
-                  Re-record
+                  {msgs.record.redo}
                 </Btn>
                 <Btn
                   onClick={handleProceed}
@@ -1252,7 +1060,7 @@ export function RecordFlow() {
                   fullWidth
                   disabled={!finalTranscript.trim()}
                 >
-                  Send
+                  {msgs.record.send}
                   <Icon.ArrowRight size={16} sw={2} />
                 </Btn>
               </div>
@@ -1261,7 +1069,7 @@ export function RecordFlow() {
                   className="text-[12px] text-[var(--muted)] text-center"
                   style={{ fontFamily: "Hind Siliguri, sans-serif" }}
                 >
-                  Edit the transcript above before sending.
+                  {msgs.record.editBeforeSend}
                 </p>
               )}
             </div>

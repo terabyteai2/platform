@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
-import { moderateTake } from "@/lib/ai/gemini";
+import { assignClusterFromTranscript } from "@/lib/ai/cluster-assignment";
+import { moderateTake } from "@/lib/ai/providers";
 import { z } from "zod";
 
 const schema = z.object({
@@ -10,6 +11,15 @@ const schema = z.object({
   newClusterSummary: z.string().optional(),
   isAnon: z.boolean().optional(),
 });
+
+async function upsertAgreeVote(clusterId: string | null, userId: string | null) {
+  if (!clusterId || !userId) return;
+  await db.vote.upsert({
+    where: { clusterId_userId: { clusterId, userId } },
+    create: { clusterId, userId, direction: "up" },
+    update: { direction: "up" },
+  });
+}
 
 export async function POST(
   req: Request,
@@ -21,7 +31,7 @@ export async function POST(
   const take = await db.take.findUnique({
     where: { id },
     include: {
-      topic: true,
+      topic: { include: { clusters: { where: { isMerged: false } } } },
       user: { select: { displayName: true } },
     },
   });
@@ -38,11 +48,16 @@ export async function POST(
   const parsed = schema.safeParse(body);
   if (!parsed.success) return Response.json({ error: "Invalid input" }, { status: 400 });
 
-  const { content, clusterId, newClusterLabel, newClusterSummary, isAnon } = parsed.data;
+  const { content, clusterId, isAnon } = parsed.data;
+  let newClusterLabel = parsed.data.newClusterLabel;
+  let newClusterSummary = parsed.data.newClusterSummary;
   const publishAnon = isAnon ?? false;
 
   // Moderation
-  const modResult = await moderateTake(id, content);
+  const modResult = await moderateTake(id, content).catch((err) => {
+    console.warn(`[confirm] moderation failed for ${id}; allowing submit:`, err);
+    return { is_safe: true, reason: null };
+  });
   if (!modResult.is_safe) {
     await db.take.update({
       where: { id },
@@ -58,7 +73,31 @@ export async function POST(
     return Response.json({ flagged: true, reason: modResult.reason }, { status: 422 });
   }
 
-  let finalClusterId = clusterId ?? take.clusterId;
+  let finalClusterId = clusterId ?? null;
+
+  if (!finalClusterId && !newClusterLabel?.trim() && content.trim()) {
+    try {
+      const result = await assignClusterFromTranscript({
+        takeId: id,
+        topicId: take.topicId,
+        transcript: content,
+        clusters: take.topic.clusters,
+      });
+      finalClusterId = result?.clusterId ?? null;
+      if (result?.isNew && result.cluster) {
+        newClusterLabel = result.cluster.label;
+        newClusterSummary = result.cluster.summary ?? undefined;
+      }
+    } catch (err) {
+      console.warn(`[confirm] clusterTake failed for ${id}; publishing without cluster:`, err);
+    }
+  }
+
+  // If AI fails without proposing a new cluster, fall back to any cluster the
+  // user picked before recording.
+  if (!finalClusterId && !newClusterLabel?.trim()) {
+    finalClusterId = take.clusterId;
+  }
 
   // Handle new cluster creation
   if (!finalClusterId && newClusterLabel) {
@@ -93,6 +132,7 @@ export async function POST(
           isPublished: false,
         },
       });
+      await upsertAgreeVote(finalClusterId, userId);
 
       return Response.json({
         published: false,
@@ -113,6 +153,7 @@ export async function POST(
       isPublished: true,
     },
   });
+  await upsertAgreeVote(finalClusterId, userId);
 
   return Response.json({ published: true, takeId: id });
 }

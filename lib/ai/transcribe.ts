@@ -110,8 +110,8 @@ async function transcribeSpeechmatics(
       await db.aiCall.create({
         data: {
           takeId,
-          // AiProvider enum only has deepgram/gemini_flash; bucket
-          // speechmatics under deepgram for telemetry purposes.
+          // Speechmatics is bucketed under deepgram for ASR telemetry because
+          // AiProvider tracks the active storage categories used by the app.
           provider: "deepgram",
           purpose: "transcribe",
           latencyMs: latency,
@@ -153,7 +153,7 @@ async function transcribeCloudflare(
   await db.aiCall.create({
     data: {
       takeId,
-      // Same — AiProvider enum is narrow; log Cloudflare under deepgram.
+      // Cloudflare ASR is bucketed under deepgram for the same telemetry reason.
       provider: "deepgram",
       purpose: "transcribe",
       latencyMs: latency,

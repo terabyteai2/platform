@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useCurrentUser, initialsFor } from "@/lib/user-context";
+import { useLocale } from "@/lib/locale-context";
 import { Btn } from "@/components/ui/Btn";
 import clsx from "clsx";
 
@@ -123,6 +124,7 @@ export function Avatar({ size = "md", readOnly = false, placement = "bottom" }: 
     editorOpen,
     setEditorOpen,
   } = useCurrentUser();
+  const { msgs } = useLocale();
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -166,7 +168,7 @@ export function Avatar({ size = "md", readOnly = false, placement = "bottom" }: 
   async function save() {
     const trimmed = draft.trim();
     if (hasPrompt && trimmed === "") {
-      setError("Please add your name to continue.");
+      setError(msgs.avatar.needName);
       return;
     }
 
@@ -247,13 +249,13 @@ export function Avatar({ size = "md", readOnly = false, placement = "bottom" }: 
           }}
         >
           <span className="voices-eyebrow">
-            {hasPrompt ? "NAME REQUIRED" : hasName ? "YOUR NAME" : "ADD YOUR NAME"}
+            {hasPrompt ? msgs.avatar.required : hasName ? msgs.avatar.yourName : msgs.avatar.addName}
           </span>
           <p
             className="mt-2 text-[13px] text-[var(--muted)] leading-snug bn-text"
             style={{ fontFamily: "Hind Siliguri, sans-serif" }}
           >
-            {prompt?.message ?? "Choose how you want to appear. Leave blank to stay anonymous."}
+            {prompt?.message ?? msgs.avatar.help}
           </p>
           <input
             type="text"
@@ -265,7 +267,7 @@ export function Avatar({ size = "md", readOnly = false, placement = "bottom" }: 
                 save();
               }
             }}
-            placeholder="e.g. Aisha R."
+            placeholder={msgs.avatar.placeholder}
             maxLength={40}
             autoFocus
             className="mt-3 w-full px-3 py-2.5 rounded-[8px] border text-[14px] bg-[var(--surface)] text-[var(--ink)] border-[var(--hairline)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-1"
@@ -278,7 +280,7 @@ export function Avatar({ size = "md", readOnly = false, placement = "bottom" }: 
           )}
           <div className="mt-3 flex items-center justify-between gap-2">
             {hasPrompt ? (
-              <span className="voices-eyebrow">SAVED TO YOUR PROFILE</span>
+              <span />
             ) : (
               <button
                 type="button"
@@ -286,7 +288,7 @@ export function Avatar({ size = "md", readOnly = false, placement = "bottom" }: 
                 disabled={saving || !hasName}
                 className="voices-eyebrow hover:text-[var(--ink)] disabled:opacity-30 transition-colors"
               >
-                {hasName ? "GO ANONYMOUS" : "ANONYMOUS"}
+                {hasName ? msgs.avatar.goAnon : msgs.avatar.anon}
               </button>
             )}
             <div className="flex items-center gap-2">
@@ -298,10 +300,10 @@ export function Avatar({ size = "md", readOnly = false, placement = "bottom" }: 
                   else setEditorOpen(false);
                 }}
               >
-                Cancel
+                {msgs.avatar.cancel}
               </Btn>
               <Btn variant="accent" size="sm" onClick={save} loading={saving}>
-                Save
+                {msgs.avatar.save}
               </Btn>
             </div>
           </div>

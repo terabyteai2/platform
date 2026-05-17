@@ -10,6 +10,14 @@ interface ClusterCardProps {
   id: string;
   label: string;
   summary?: string | null;
+  image?: {
+    url: string;
+    alt: string;
+    source: string;
+    creditName?: string | null;
+    creditUrl?: string | null;
+    color?: string | null;
+  } | null;
   upvotes: number;
   downvotes: number;
   takeCount: number;
@@ -27,6 +35,7 @@ export function ClusterCard({
   id,
   label,
   summary,
+  image,
   upvotes,
   downvotes,
   takeCount,
@@ -68,7 +77,96 @@ export function ClusterCard({
           </div>
         )}
 
+        {image && (
+          <figure className="hidden sm:block shrink-0 w-20">
+            <div
+              className="aspect-[4/3] overflow-hidden rounded-[8px] border bg-[var(--surface-soft)]"
+              style={{
+                borderColor: "var(--hairline-soft)",
+                backgroundColor: image.color ?? "var(--surface-soft)",
+              }}
+            >
+              <img
+                src={image.url}
+                alt={image.alt}
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            </div>
+            {image.source === "unsplash" && image.creditName && (
+              <figcaption className="mt-1 voices-eyebrow normal-case tracking-normal leading-tight">
+                Photo by{" "}
+                {image.creditUrl ? (
+                  <a
+                    href={image.creditUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+                  >
+                    {image.creditName}
+                  </a>
+                ) : (
+                  image.creditName
+                )}{" "}
+                on{" "}
+                <a
+                  href="https://unsplash.com/?utm_source=voices_discussion_platform&utm_medium=referral"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+                >
+                  Unsplash
+                </a>
+              </figcaption>
+            )}
+          </figure>
+        )}
+
         <div className="flex-1 min-w-0">
+          {image && (
+            <figure className="mb-3 sm:hidden">
+              <div
+                className="aspect-[16/9] overflow-hidden rounded-[8px] border bg-[var(--surface-soft)]"
+                style={{
+                  borderColor: "var(--hairline-soft)",
+                  backgroundColor: image.color ?? "var(--surface-soft)",
+                }}
+              >
+                <img
+                  src={image.url}
+                  alt={image.alt}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+              {image.source === "unsplash" && image.creditName && (
+                <figcaption className="mt-1 voices-eyebrow normal-case tracking-normal">
+                  Photo by{" "}
+                  {image.creditUrl ? (
+                    <a
+                      href={image.creditUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+                    >
+                      {image.creditName}
+                    </a>
+                  ) : (
+                    image.creditName
+                  )}{" "}
+                  on{" "}
+                  <a
+                    href="https://unsplash.com/?utm_source=voices_discussion_platform&utm_medium=referral"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+                  >
+                    Unsplash
+                  </a>
+                </figcaption>
+              )}
+            </figure>
+          )}
           <h3
             className="text-[17px] sm:text-lg font-semibold text-[var(--ink)] leading-snug bn-text"
             style={{ fontFamily: "Hind Siliguri, Noto Sans Bengali, sans-serif" }}

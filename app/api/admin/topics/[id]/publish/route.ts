@@ -1,5 +1,10 @@
 import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
+import {
+  backfillTopClusterImagesForTopic,
+  selectTopicImage,
+  topicImageToData,
+} from "@/lib/topic-image";
 import { z } from "zod";
 
 const schema = z.object({
@@ -39,8 +44,38 @@ export async function POST(
       closesAt: true,
       status: true,
       createdAt: true,
+      imageUrl: true,
     },
   });
+
+  // Last chance to give the topic a cartoon-style image before it goes live. Non-fatal.
+  if (!topic.imageUrl) {
+    try {
+      const image = await selectTopicImage({
+        id: topic.id,
+        category: topic.category,
+        question: topic.question,
+        questionEn: topic.questionEn,
+        context: topic.context,
+      });
+      if (image) {
+        await db.topic.update({ where: { id: topic.id }, data: topicImageToData(image) });
+      }
+    } catch (err) {
+      console.warn(`[admin/publish] image fetch failed for ${topic.id}:`, err);
+    }
+  }
+
+  await backfillTopClusterImagesForTopic(
+    {
+      id: topic.id,
+      category: topic.category,
+      question: topic.question,
+      questionEn: topic.questionEn,
+      context: topic.context,
+    },
+    4
+  );
 
   return Response.json({ topic });
 }

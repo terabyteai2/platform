@@ -17,7 +17,11 @@
     "live": "Live",
     "noTopic": "No topic this week",
     "sampleQuote": "A voice",
-    "week": "Week"
+    "week": "Week",
+    "viewTally": "View results",
+    "clustersHeading": "Opinion clusters",
+    "photoBy": "Photo by",
+    "imageBy": "Image:"
   },
   "record": {
     "title": "Add your voice",
@@ -28,10 +32,28 @@
     "holdToRecord": "Hold to record",
     "banglaHint": "Speak in Bangla",
     "maxDuration": "Max 60 seconds",
-    "recording": "Recording...",
-    "processing": "Processing...",
+    "recording": "Recording…",
+    "processing": "Processing…",
     "next": "Next",
-    "back": "Back"
+    "back": "Back",
+    "skip": "Skip & record",
+    "redo": "Re-record",
+    "send": "Send",
+    "stop": "Stop",
+    "tapStart": "Tap mic to start",
+    "tapMore": "Tap mic to record more",
+    "tapPause": "Tap to pause",
+    "tapResume": "Tap to resume",
+    "listening": "Listening",
+    "pausedEdit": "Paused · edit freely",
+    "ready": "Ready",
+    "captured": "Captured",
+    "sending": "Sending…",
+    "savingHint": "Saving your edited transcript — no re-processing needed.",
+    "transcriptPlaceholderListening": "Listening — speak now.",
+    "transcriptPlaceholderCaptured": "Edit if needed, then tap Send below.",
+    "transcriptPlaceholderReady": "Tap the mic to start. Your words will appear here — and you can edit them anytime.",
+    "editBeforeSend": "Edit the transcript above before sending."
   },
   "review": {
     "title": "Review your take",
@@ -45,20 +67,41 @@
     "anonymous": "Stay anonymous",
     "publishedName": "Publish with name",
     "pending": "Pending",
-    "pendingDesc": "Your take will appear once more people submit similar opinions."
+    "pendingDesc": "Your take will appear once more people submit similar opinions.",
+    "loading": "Loading",
+    "yourRecording": "Your recording",
+    "queued": "Queued for review",
+    "published": "Published",
+    "publishedHeading": "Published!",
+    "publishedDesc": "Your take has been added.",
+    "publishingAs": "Publishing as",
+    "setNameHint": "Tap the circle to set a name.",
+    "appearAs": "Your take will appear under «{name}».",
+    "appearAnon": "Your take will appear under «Anonymous».",
+    "goHome": "Back to home",
+    "tryAgain": "Try again",
+    "loadFailedTitle": "We couldn't load your take.",
+    "missingTakeId": "Missing take id — go back and record again.",
+    "couldNotAutoTranscribe": "We couldn't auto-transcribe your audio. Listen back above and type what you said below — that's what gets published."
   },
   "results": {
     "title": "Results",
     "totalVoices": "Total voices",
     "byCluster": "By cluster",
     "featuredQuote": "Featured voice",
-    "themes": "Key themes"
+    "themes": "Key themes",
+    "pill": "Results",
+    "distribution": "Distribution",
+    "clustersLabel": "{n} clusters"
   },
   "past": {
     "title": "Past discussions",
     "filter": "Filter",
     "all": "All",
-    "loadMore": "Load more"
+    "loadMore": "Load more",
+    "archiveLabel": "Archive",
+    "emptyHeading": "No discussions in this category.",
+    "voicesSuffix": "voices"
   },
   "admin": {
     "compose": "Create new topic",
@@ -75,7 +118,9 @@
     "flagged": "Flagged",
     "approve": "Approve",
     "hide": "Hide",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "userFallback": "User",
+    "loading": "Loading"
   },
   "auth": {
     "login": "Login",
@@ -90,6 +135,20 @@
     "society": "Society",
     "cities": "Cities",
     "local": "Local"
+  },
+  "avatar": {
+    "yourName": "Your name",
+    "addName": "Add your name",
+    "required": "Name required",
+    "goAnon": "Go anonymous",
+    "anon": "Anonymous",
+    "help": "Choose how you want to appear. Leave blank to stay anonymous.",
+    "needName": "Please add your name to continue.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "placeholder": "e.g. Aisha R.",
+    "beforeVote": "Tell us your name before your vote is saved.",
+    "beforePublish": "Add your name before publishing."
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",

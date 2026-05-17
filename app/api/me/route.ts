@@ -5,8 +5,18 @@ import { z } from "zod";
 
 const ANON_COOKIE = "voices_anon";
 
-function publicUser(u: { id: string; displayName: string | null; isAnon: boolean }) {
-  return { id: u.id, displayName: u.displayName, isAnon: u.isAnon };
+function publicUser(u: { id: string; displayName: string | null; isAnon: boolean; email: string | null }) {
+  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+  const isAdmin = !!u.email && adminEmails.includes(u.email);
+  return {
+    id: u.id,
+    displayName: u.displayName,
+    isAnon: u.isAnon,
+    isAdmin,
+  };
 }
 
 export async function GET() {

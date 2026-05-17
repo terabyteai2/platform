@@ -14,6 +14,7 @@ export interface CurrentUser {
   id: string;
   displayName: string | null;
   isAnon: boolean;
+  isAdmin?: boolean;
 }
 
 export interface NamePrompt {

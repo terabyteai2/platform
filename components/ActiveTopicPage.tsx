@@ -12,6 +12,14 @@ interface Cluster {
   id: string;
   label: string;
   summary?: string | null;
+  image?: {
+    url: string;
+    alt: string;
+    source: string;
+    creditName?: string | null;
+    creditUrl?: string | null;
+    color?: string | null;
+  } | null;
   upvotes: number;
   downvotes: number;
   takeCount: number;
@@ -118,9 +126,7 @@ export function ActiveTopicPage() {
       // Trigger upvote on space
       const cluster = topic.clusters[idx];
       if (cluster) {
-        const hasName = await requireName(
-          "Tell us your name or username before your vote is saved."
-        );
+        const hasName = await requireName(msgs.avatar.beforeVote);
         if (!hasName) return;
         fetch("/api/votes", {
           method: "POST",
@@ -146,9 +152,8 @@ export function ActiveTopicPage() {
         category={topic.category}
       />
 
-      <div className="px-4 sm:px-6 mb-4 flex items-center justify-between">
-        <span className="voices-eyebrow">OPINION CLUSTERS</span>
-        <span className="voices-eyebrow">AI · {topic.clusters.length} CLUSTERS</span>
+      <div className="px-4 sm:px-6 mb-4">
+        <span className="voices-eyebrow">{msgs.topic.clustersHeading}</span>
       </div>
 
       <div className="space-y-3 px-4 sm:px-6">
@@ -158,6 +163,7 @@ export function ActiveTopicPage() {
             id={cluster.id}
             label={cluster.label}
             summary={cluster.summary}
+            image={idx < 4 ? cluster.image : null}
             upvotes={cluster.upvotes}
             downvotes={cluster.downvotes}
             takeCount={cluster.takeCount}
@@ -190,7 +196,7 @@ export function ActiveTopicPage() {
             href={`/results?topicId=${topic.id}`}
             className="voices-eyebrow hover:text-[var(--ink)] transition-colors"
           >
-            VIEW LIVE TALLY →
+            {msgs.topic.viewTally} →
           </Link>
         </div>
       )}

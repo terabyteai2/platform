@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { getUserId } from "@/lib/auth";
 import { transcribe, type AudioInput } from "@/lib/ai/transcribe";
-import { clusterTake } from "@/lib/ai/gemini";
+import { assignClusterFromTranscript } from "@/lib/ai/cluster-assignment";
 import { getSignedDownloadUrl, isLocalPath } from "@/lib/b2";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -119,25 +119,22 @@ export async function POST(
   let matchScore = 0;
   let newClusterDraft: { label: string; summary: string } | null = null;
 
-  if (transcript.trim() && clusters.length > 0) {
+  if (transcript.trim()) {
     try {
-      const result = await clusterTake(id, transcript, clusters);
-      matchScore = result.matchScore;
-
-      if (result.clusterId === "new" && result.newClusterDraft) {
-        newClusterDraft = result.newClusterDraft;
-        suggestedClusterId = null;
-      } else {
-        suggestedClusterId = result.clusterId;
-      }
-
-      await db.take.update({
-        where: { id },
-        data: {
-          aiMatchScore: matchScore,
-          aiSuggestedClusterId: suggestedClusterId,
-        },
+      const result = await assignClusterFromTranscript({
+        takeId: id,
+        topicId: take.topicId,
+        transcript,
+        clusters,
       });
+      suggestedClusterId = result?.clusterId ?? null;
+      matchScore = result?.matchScore ?? 0;
+      if (result?.isNew && result.cluster) {
+        newClusterDraft = {
+          label: result.cluster.label,
+          summary: result.cluster.summary ?? "",
+        };
+      }
     } catch (err) {
       console.warn(`[finalize] clusterTake failed for ${id}:`, err);
     }

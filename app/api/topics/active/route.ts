@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { getOrCreateUser } from "@/lib/auth";
-import { topicImagesByIds } from "@/lib/topic-image";
+import { clusterImagesByIds, topicImagesByIds } from "@/lib/topic-image";
 
 export const dynamic = "force-dynamic";
 
@@ -48,11 +48,13 @@ export async function GET() {
     select: { clusterId: true, direction: true },
   });
   const voteMap = Object.fromEntries(userVotes.map((v) => [v.clusterId, v.direction]));
+  const clusterImageMap = await clusterImagesByIds(topic.clusters.map((c) => c.id));
 
   const clusters = topic.clusters.map((c) => ({
     id: c.id,
     label: c.label,
     summary: c.summary,
+    image: clusterImageMap[c.id] ?? null,
     isAiSeeded: c.isAiSeeded,
     order: c.order,
     upvotes: c.votes.filter((v) => v.direction === "up").length,

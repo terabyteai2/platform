@@ -43,13 +43,7 @@ export function TopicHero({
   const timeLeft = formatDistanceToNow(closesDate, { addSuffix: true });
   const isClosed = status === "closed";
 
-  const categoryLabels: Record<string, string> = {
-    work: locale === "bn" ? "কাজ" : "Work",
-    tech: locale === "bn" ? "প্রযুক্তি" : "Tech",
-    society: locale === "bn" ? "সমাজ" : "Society",
-    cities: locale === "bn" ? "শহর" : "Cities",
-    local: locale === "bn" ? "স্থানীয়" : "Local",
-  };
+  const categoryLabels: Record<string, string> = msgs.categories;
 
   const headline = locale === "en" && questionEn ? questionEn : question;
   const headlineClass = locale === "en" && questionEn ? "voices-display" : "voices-display-bn";
@@ -72,11 +66,10 @@ export function TopicHero({
               loading="eager"
             />
           </div>
-          {(image.creditName || image.source) && (
+          {image.source === "unsplash" && image.creditName && (
             <figcaption className="mt-2 voices-eyebrow normal-case tracking-normal">
+              {msgs.topic.photoBy}{" "}
               {image.creditUrl ? (
-                <>
-                  Photo by{" "}
                   <a
                     href={image.creditUrl}
                     target="_blank"
@@ -85,24 +78,18 @@ export function TopicHero({
                   >
                     {image.creditName}
                   </a>
-                  {image.source === "unsplash" && (
-                    <>
-                      {" "}
-                      on{" "}
-                      <a
-                        href="https://unsplash.com/?utm_source=voices_discussion_platform&utm_medium=referral"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
-                      >
-                        Unsplash
-                      </a>
-                    </>
-                  )}
-                </>
               ) : (
-                <>Image: {image.creditName ?? image.source}</>
-              )}
+                image.creditName
+              )}{" "}
+              on{" "}
+              <a
+                href="https://unsplash.com/?utm_source=voices_discussion_platform&utm_medium=referral"
+                target="_blank"
+                rel="noreferrer"
+                className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+              >
+                Unsplash
+              </a>
             </figcaption>
           )}
         </figure>

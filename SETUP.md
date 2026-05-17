@@ -6,12 +6,22 @@ Copy `.env.local` and fill in real values:
 
 ```
 
-DEEPGRAM_API_KEY=          5b2c4ebf8db35cbc0f587d867a7c958b53d776b7
+DEEPGRAM_API_KEY=
 
-GEMINI_API_KEY=            AIzaSyDxcwYkiHMSO2oAFLybInV5DJqhEkOSmRA
-RESEND_API_KEY=            re_MrgJrdYo_6VWprQnqo45jwoJQpmpSLmve
-NEXT_PUBLIC_SITE_URL=      saifeerahman.com
-ADMIN_EMAILS=              saifeer1019@gmail.com
+XAI_API_KEY=
+DEEPSEEK_API_KEY=
+OPENAI_API_KEY=
+UNSPLASH_ACCESS_KEY=
+AI_TEXT_PROVIDER_ORDER=xai_grok,deepseek,openai
+XAI_TEXT_MODEL=grok-4.3
+DEEPSEEK_TEXT_MODEL=deepseek-v4-flash
+OPENAI_TEXT_MODEL=gpt-5.4-mini
+XAI_IMAGE_MODEL=grok-imagine-image-quality
+OPENAI_IMAGE_MODEL=gpt-image-2
+AI_IMAGE_PROVIDER_ORDER=openai,xai,unsplash
+RESEND_API_KEY=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ADMIN_EMAILS=
 ```
 
 ## 2. Supabase Storage bucket
@@ -49,7 +59,7 @@ Set all env vars in Vercel dashboard or via `vercel env add`. The `vercel.json` 
 
 Every Friday before 5pm BST (Asia/Dhaka), in `/admin/compose`:
 1. Fill in the question + context
-2. Click "AI ক্লাস্টার তৈরি করুন" — Gemini seeds 5–8 Bangla opinion clusters
+2. Click "AI ক্লাস্টার তৈরি করুন" — AI seeds 5-8 Bangla opinion clusters
 3. Edit/remove any you don't like
 4. Set `closesAt` to Friday 5pm local time
 5. Click "Publish (LIVE)"
@@ -58,7 +68,7 @@ The previous topic auto-closes when you publish a new one.
 
 ## Architecture notes
 
-- **AI pipeline:** every Deepgram and Gemini call is logged to `AiCall` table with latency, payload, and success flag — use Prisma Studio (`npm run db:studio`) to debug
+- **AI pipeline:** every ASR and AI call is logged to `AiCall` table with latency, payload, and success flag — use Prisma Studio (`npm run db:studio`) to debug
 - **Fallback chain:** Deepgram → Speechmatics → Cloudflare Whisper
 - **Cluster threshold:** a new user-proposed cluster only appears publicly after 5 takes match it; below that the take shows as "pending" to the author only
 - **Anonymous sessions:** set via `voices_anon` cookie (httpOnly, 1-year expiry) — no account needed to vote

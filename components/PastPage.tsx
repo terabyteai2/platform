@@ -71,17 +71,14 @@ export function PastPage() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 pb-16">
       {/* Header */}
       <div className="mb-8">
-        <span className="voices-eyebrow">ARCHIVE</span>
-        <h1 className="mt-2 voices-display text-4xl sm:text-5xl text-[var(--ink)]">
+        <span className="voices-eyebrow">{msgs.past.archiveLabel}</span>
+        <h1
+          className="mt-2 voices-display-bn text-4xl sm:text-5xl text-[var(--ink)] bn-text"
+          style={{ fontFamily: "Noto Serif Bengali, Newsreader, Georgia, serif" }}
+        >
           {msgs.past.title}
         </h1>
-        <p
-          className="mt-3 voices-quote text-lg text-[var(--muted)]"
-          style={{ fontFamily: "Newsreader, Georgia, serif", fontStyle: "italic" }}
-        >
-          One question a week. The conversations live here.
-        </p>
-        <hr className="voices-rule mt-6" />
+        <hr className="voices-rule mt-5" />
       </div>
 
       {/* Category filter — pill row */}
@@ -109,9 +106,8 @@ export function PastPage() {
       {/* Topic grid */}
       {topics.length === 0 && !loading ? (
         <div className="text-center py-12 voices-card">
-          <span className="voices-eyebrow block mb-2">EMPTY</span>
-          <p className="text-[var(--muted)] text-sm bn-text">
-            কোনো পুরোনো আলোচনা নেই।
+          <p className="text-[var(--muted)] text-sm bn-text" style={{ fontFamily: "Hind Siliguri, sans-serif" }}>
+            {msgs.past.emptyHeading}
           </p>
         </div>
       ) : (
@@ -142,9 +138,11 @@ export function PastPage() {
               <div className="p-5 flex flex-col gap-3 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Pill variant="default">
-                    WEEK {t.week.toString().padStart(2, "0")}
+                    {msgs.topic.week} {t.week.toString().padStart(2, "0")}
                   </Pill>
-                  <Pill variant="ghost">{t.category.toUpperCase()}</Pill>
+                  <Pill variant="ghost">
+                    {msgs.categories[t.category as keyof typeof msgs.categories] ?? t.category}
+                  </Pill>
                 </div>
                 <Link
                   href={`/results?topicId=${t.id}`}
@@ -159,7 +157,7 @@ export function PastPage() {
                 </Link>
                 {t.image?.source === "unsplash" && t.image.creditName && (
                   <span className="voices-eyebrow normal-case tracking-normal">
-                    Photo by{" "}
+                    {msgs.topic.photoBy}{" "}
                     {t.image.creditUrl ? (
                       <a
                         href={t.image.creditUrl}
@@ -171,8 +169,7 @@ export function PastPage() {
                       </a>
                     ) : (
                       t.image.creditName
-                    )}{" "}
-                    on{" "}
+                    )}{" · "}
                     <a
                       href="https://unsplash.com/?utm_source=voices_discussion_platform&utm_medium=referral"
                       target="_blank"
@@ -205,7 +202,7 @@ export function PastPage() {
                   style={{ borderColor: "var(--hairline-soft)" }}
                 >
                   <span className="voices-eyebrow">
-                    {t.totalTakes.toLocaleString()} VOICES
+                    {t.totalTakes.toLocaleString()} {msgs.past.voicesSuffix}
                   </span>
                   <span className="voices-mono text-[11px]" style={{ color: "var(--muted)" }}>
                     {format(new Date(t.closesAt), "MMM d, yyyy")}

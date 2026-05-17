@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { topicImagesByIds } from "@/lib/topic-image";
+import { clusterImagesByIds, topicImagesByIds } from "@/lib/topic-image";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +45,7 @@ export async function GET(
   }
 
   const imageMap = await topicImagesByIds([topic.id]);
+  const clusterImageMap = await clusterImagesByIds(topic.clusters.map((c) => c.id));
 
   return Response.json({
     topic: {
@@ -53,6 +54,7 @@ export async function GET(
         id: c.id,
         label: c.label,
         summary: c.summary,
+        image: clusterImageMap[c.id] ?? null,
         upvotes: c.votes.filter((v) => v.direction === "up").length,
         downvotes: c.votes.filter((v) => v.direction === "down").length,
         takeCount: c._count.takes,

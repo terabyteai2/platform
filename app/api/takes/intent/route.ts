@@ -1,6 +1,5 @@
 import { db } from "@/lib/db";
 import { getOrCreateUser } from "@/lib/auth";
-import { getUploadUrl } from "@/lib/b2";
 import { z } from "zod";
 
 const schema = z.object({
@@ -53,7 +52,5 @@ export async function POST(req: Request) {
     },
   });
 
-  const { uploadUrl, publicPath } = await getUploadUrl(take.id);
-
-  return Response.json({ takeId: take.id, uploadUrl, publicPath }, { headers });
+  return Response.json({ takeId: take.id }, { headers });
 }

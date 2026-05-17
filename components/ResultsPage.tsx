@@ -10,6 +10,14 @@ interface ClusterResult {
   id: string;
   label: string;
   summary?: string | null;
+  image?: {
+    url: string;
+    alt: string;
+    source: string;
+    creditName?: string | null;
+    creditUrl?: string | null;
+    color?: string | null;
+  } | null;
   upvotes: number;
   downvotes: number;
   takeCount: number;
@@ -30,7 +38,6 @@ export function ResultsPage() {
   const searchParams = useSearchParams();
   const topicId = searchParams.get("topicId");
   const [data, setData] = useState<ResultsData | null>(null);
-  const [activeTopic, setActiveTopic] = useState<{ id: string; question: string } | null>(null);
 
   const fetchResults = useCallback(async (id: string) => {
     const res = await fetch(`/api/topics/${id}/results`);
@@ -46,9 +53,6 @@ export function ResultsPage() {
         const res = await fetch("/api/topics/active");
         const d = await res.json();
         id = d.topic?.id;
-        if (d.topic) {
-          setActiveTopic({ id: d.topic.id, question: d.topic.question });
-        }
       }
       if (id) fetchResults(id);
     }
@@ -122,6 +126,7 @@ export function ResultsPage() {
               label={r.label}
               pct={r.pct}
               count={r.takeCount}
+              image={idx < 4 ? r.image : null}
               featured={idx === 0}
               rank={idx}
             />
@@ -163,38 +168,86 @@ export function ResultsPage() {
         <div className="space-y-3">
           {data.results.map((r, idx) => (
             <div key={r.id} className="voices-card p-5">
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex items-baseline gap-3 flex-1 min-w-0">
-                  <span
-                    className="voices-mono text-[11px] font-semibold shrink-0"
-                    style={{ color: "var(--muted)", letterSpacing: "0.08em" }}
-                  >
-                    {String(idx + 1).padStart(2, "0")}
-                  </span>
-                  <h3
-                    className="text-[15px] font-semibold text-[var(--ink)] leading-snug bn-text"
-                    style={{ fontFamily: "Hind Siliguri, sans-serif" }}
-                  >
-                    {r.label}
-                  </h3>
+              <div className="flex flex-col sm:flex-row gap-4">
+                {idx < 4 && r.image && (
+                  <figure className="sm:w-28 shrink-0">
+                    <div
+                      className="aspect-[4/3] overflow-hidden rounded-[8px] border bg-[var(--surface-soft)]"
+                      style={{
+                        borderColor: "var(--hairline-soft)",
+                        backgroundColor: r.image.color ?? "var(--surface-soft)",
+                      }}
+                    >
+                      <img
+                        src={r.image.url}
+                        alt={r.image.alt}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                    {r.image.source === "unsplash" && r.image.creditName && (
+                      <figcaption className="mt-1 voices-eyebrow normal-case tracking-normal leading-tight">
+                        Photo by{" "}
+                        {r.image.creditUrl ? (
+                          <a
+                            href={r.image.creditUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+                          >
+                            {r.image.creditName}
+                          </a>
+                        ) : (
+                          r.image.creditName
+                        )}{" "}
+                        on{" "}
+                        <a
+                          href="https://unsplash.com/?utm_source=voices_discussion_platform&utm_medium=referral"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
+                        >
+                          Unsplash
+                        </a>
+                      </figcaption>
+                    )}
+                  </figure>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-baseline gap-3 flex-1 min-w-0">
+                      <span
+                        className="voices-mono text-[11px] font-semibold shrink-0"
+                        style={{ color: "var(--muted)", letterSpacing: "0.08em" }}
+                      >
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
+                      <h3
+                        className="text-[15px] font-semibold text-[var(--ink)] leading-snug bn-text"
+                        style={{ fontFamily: "Hind Siliguri, sans-serif" }}
+                      >
+                        {r.label}
+                      </h3>
+                    </div>
+                    <span
+                      className="voices-mono text-[12px] font-semibold shrink-0"
+                      style={{ color: "var(--ink-soft)" }}
+                    >
+                      {r.pct}%
+                    </span>
+                  </div>
+                  {r.summary && (
+                    <p
+                      className="text-[13px] text-[var(--ink-soft)] leading-relaxed bn-text pl-7"
+                      style={{ fontFamily: "Hind Siliguri, sans-serif" }}
+                    >
+                      {r.summary}
+                    </p>
+                  )}
+                  <div className="mt-3 pl-7 voices-eyebrow">
+                    {r.takeCount} VOICES · ↑{r.upvotes} ↓{r.downvotes}
+                  </div>
                 </div>
-                <span
-                  className="voices-mono text-[12px] font-semibold shrink-0"
-                  style={{ color: "var(--ink-soft)" }}
-                >
-                  {r.pct}%
-                </span>
-              </div>
-              {r.summary && (
-                <p
-                  className="text-[13px] text-[var(--ink-soft)] leading-relaxed bn-text pl-7"
-                  style={{ fontFamily: "Hind Siliguri, sans-serif" }}
-                >
-                  {r.summary}
-                </p>
-              )}
-              <div className="mt-3 pl-7 voices-eyebrow">
-                {r.takeCount} VOICES · ↑{r.upvotes} ↓{r.downvotes}
               </div>
             </div>
           ))}

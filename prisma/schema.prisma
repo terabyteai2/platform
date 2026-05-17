@@ -43,6 +43,9 @@ enum AiPurpose {
 enum AiProvider {
   deepgram
   gemini_flash
+  xai_grok
+  deepseek
+  openai
 }
 
 enum ModerationAction {
@@ -92,15 +95,22 @@ model Topic {
 }
 
 model Cluster {
-  id           String   @id @default(cuid())
-  topicId      String
-  label        String   @db.VarChar(120)
-  summary      String?  @db.Text
-  isAiSeeded   Boolean  @default(false)
-  isMerged     Boolean  @default(false)
-  mergedIntoId String?
-  order        Int      @default(0)
-  createdAt    DateTime @default(now())
+  id              String   @id @default(cuid())
+  topicId         String
+  label           String   @db.VarChar(120)
+  summary         String?  @db.Text
+  imageUrl        String?  @db.Text
+  imageAlt        String?  @db.VarChar(240)
+  imageSource     String?  @db.VarChar(40)
+  imageCreditName String?  @db.VarChar(120)
+  imageCreditUrl  String?  @db.VarChar(500)
+  imageProviderId String?  @db.VarChar(120)
+  imageColor      String?  @db.VarChar(24)
+  isAiSeeded      Boolean  @default(false)
+  isMerged        Boolean  @default(false)
+  mergedIntoId    String?
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
 
   topic            Topic             @relation(fields: [topicId], references: [id])
   takes            Take[]

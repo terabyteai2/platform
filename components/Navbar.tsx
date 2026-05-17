@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useLocale } from "@/lib/locale-context";
+import { useCurrentUser } from "@/lib/user-context";
 
 export function Navbar() {
   const { locale, msgs, setLocale } = useLocale();
+  const { user } = useCurrentUser();
 
   return (
     <nav
@@ -28,25 +30,17 @@ export function Navbar() {
           >
             V
           </span>
-          <span className="flex flex-col leading-none">
-            <span
-              className="voices-serif"
-              style={{
-                color: "var(--ink)",
-                fontWeight: 500,
-                fontSize: "20px",
-                letterSpacing: "-0.015em",
-                lineHeight: 1,
-              }}
-            >
-              Voices
-            </span>
-            <span
-              className="voices-eyebrow mt-1 hidden sm:inline"
-              style={{ fontSize: "9px", letterSpacing: "0.22em" }}
-            >
-              WEEK · BANGLA
-            </span>
+          <span
+            className="voices-serif"
+            style={{
+              color: "var(--ink)",
+              fontWeight: 500,
+              fontSize: "20px",
+              letterSpacing: "-0.015em",
+              lineHeight: 1,
+            }}
+          >
+            Voices
           </span>
         </Link>
 
@@ -65,6 +59,16 @@ export function Navbar() {
           >
             {msgs.nav.past}
           </Link>
+
+          {user?.isAdmin && (
+            <Link
+              href="/admin"
+              className="px-3 py-1.5 rounded-[8px] text-sm font-medium hover:bg-[var(--accent-soft)] transition-colors voices-mono"
+              style={{ color: "var(--ink-soft)", letterSpacing: "0.04em" }}
+            >
+              ADMIN
+            </Link>
+          )}
 
           {/* Locale toggle */}
           <button

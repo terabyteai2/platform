@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { clusterImagesByIds } from "@/lib/topic-image";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,7 @@ export async function GET(
   }
 
   const totalVoices = topic._count.takes;
+  const clusterImageMap = await clusterImagesByIds(topic.clusters.map((c) => c.id));
 
   const results = topic.clusters.map((c) => {
     const upvotes = c.votes.filter((v) => v.direction === "up").length;
@@ -54,6 +56,7 @@ export async function GET(
       id: c.id,
       label: c.label,
       summary: c.summary,
+      image: clusterImageMap[c.id] ?? null,
       upvotes,
       downvotes,
       takeCount,
