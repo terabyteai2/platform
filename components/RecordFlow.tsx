@@ -5,32 +5,18 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useLocale } from "@/lib/locale-context";
 import { useCurrentUser } from "@/lib/user-context";
 import { Btn } from "@/components/ui/Btn";
-import { Pill } from "@/components/ui/Pill";
 import { Icon } from "@/components/ui/Icon";
 import clsx from "clsx";
 
-interface Cluster {
-  id: string;
-  label: string;
-  summary?: string | null;
-}
-
 interface TopicData {
   id: string;
+  week?: number;
+  category?: string;
   question: string;
   questionEn?: string | null;
-  image?: {
-    url: string;
-    alt: string;
-    source: string;
-    creditName?: string | null;
-    creditUrl?: string | null;
-    color?: string | null;
-  } | null;
-  clusters: Cluster[];
 }
 
-type Step = "pick" | "record" | "processing";
+type Step = "record" | "processing";
 
 export function RecordFlow() {
   const { locale, msgs } = useLocale();
@@ -44,8 +30,7 @@ export function RecordFlow() {
     queryTopicId && queryTopicId !== "undefined" ? queryTopicId : null
   );
   const [topicError, setTopicError] = useState<string | null>(null);
-  const [step, setStep] = useState<Step>("pick");
-  const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
+  const [step, setStep] = useState<Step>("record");
 
   // Audio recording state
   const [recording, setRecording] = useState(false);
@@ -591,16 +576,12 @@ export function RecordFlow() {
 
     setStep("processing");
 
-    const clusterIdForServer =
-      selectedClusterId && selectedClusterId !== "other" ? selectedClusterId : undefined;
-
     try {
       const intentRes = await fetch("/api/takes/intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topicId: resolvedTopicId,
-          ...(clusterIdForServer ? { clusterId: clusterIdForServer } : {}),
         }),
       });
       if (!intentRes.ok) {
@@ -713,57 +694,14 @@ export function RecordFlow() {
   // ─── Main UI ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-xl mx-auto px-4 sm:px-6 pt-10 pb-16">
+    <div className="max-w-[430px] mx-auto px-4 pt-5 pb-20">
       {/* Topic context */}
-      <div className="mb-8">
-        {topic.image && (
-          <figure className="mb-6">
-            <div
-              className="aspect-[16/9] overflow-hidden rounded-[10px] border bg-[var(--surface-soft)]"
-              style={{
-                borderColor: "var(--hairline)",
-                backgroundColor: topic.image.color ?? "var(--surface-soft)",
-              }}
-            >
-              <img
-                src={topic.image.url}
-                alt={topic.image.alt}
-                className="h-full w-full object-cover"
-                loading="eager"
-              />
-            </div>
-            {topic.image.source === "unsplash" && topic.image.creditName && (
-              <figcaption className="mt-2 voices-eyebrow normal-case tracking-normal">
-                Photo by{" "}
-                {topic.image.creditUrl ? (
-                    <a
-                      href={topic.image.creditUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
-                    >
-                      {topic.image.creditName}
-                    </a>
-                ) : (
-                  topic.image.creditName
-                )}{" "}
-                on{" "}
-                <a
-                  href="https://unsplash.com/?utm_source=voices_discussion_platform&utm_medium=referral"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
-                >
-                  Unsplash
-                </a>
-              </figcaption>
-            )}
-          </figure>
-        )}
-
-        <span className="voices-eyebrow">THIS WEEK&apos;S QUESTION</span>
+      <div className="mb-5">
+        <span className="voices-eyebrow">
+          WEEK {topic.week ? String(topic.week).padStart(2, "0") : ""} {topic.category ? `· ${topic.category}` : ""}
+        </span>
         <p
-          className="mt-3 voices-display-bn text-2xl sm:text-3xl text-[var(--ink)]"
+          className="mt-2 voices-display-bn text-[22px] text-[var(--ink)]"
           style={{
             fontFamily: locale === "en"
               ? "Newsreader, Georgia, serif"
@@ -772,96 +710,19 @@ export function RecordFlow() {
         >
           {locale === "en" && topic.questionEn ? topic.questionEn : topic.question}
         </p>
-        <hr className="voices-rule mt-6" />
       </div>
-
-      {/* Step 1: Pick cluster (optional) */}
-      {step === "pick" && (
-        <div className="space-y-5">
-          <h2
-            className="voices-display-bn text-xl sm:text-2xl text-[var(--ink)] bn-text"
-            style={{ fontFamily: "Hind Siliguri, sans-serif", fontWeight: 600 }}
-          >
-            {msgs.record.step1Title}
-          </h2>
-
-          {topic.clusters.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {topic.clusters.map((c) => (
-                <Pill
-                  key={c.id}
-                  label={c.label}
-                  selected={selectedClusterId === c.id}
-                  onClick={() =>
-                    setSelectedClusterId(selectedClusterId === c.id ? null : c.id)
-                  }
-                />
-              ))}
-              <Pill
-                label={msgs.record.other}
-                selected={selectedClusterId === "other"}
-                onClick={() =>
-                  setSelectedClusterId(selectedClusterId === "other" ? null : "other")
-                }
-              />
-            </div>
-          ) : null}
-
-          <div className="pt-2">
-            <Btn
-              onClick={() => setStep("record")}
-              size="lg"
-              variant="accent"
-              fullWidth
-            >
-              <Icon.Mic size={16} sw={2} />
-              {selectedClusterId ? msgs.record.next : msgs.record.skip}
-              <Icon.ArrowRight size={16} sw={2} />
-            </Btn>
-          </div>
-        </div>
-      )}
 
       {/* Step 2: Record */}
       {step === "record" && (
-        <div className="space-y-6">
-          <button
-            onClick={() => setStep("pick")}
-            className="voices-eyebrow hover:text-[var(--ink)] transition-colors inline-flex items-center gap-1"
-          >
-            <Icon.ArrowLeft size={10} sw={2.4} />
-            {msgs.record.back.toUpperCase()}
-          </button>
-
-          <h2
-            className="voices-display-bn text-xl sm:text-2xl text-[var(--ink)] bn-text"
-            style={{ fontFamily: "Hind Siliguri, sans-serif", fontWeight: 600 }}
-          >
-            {msgs.record.step2Title}
-          </h2>
-
-          {/* Timer + waveform line */}
-          <div className="flex items-center justify-between gap-4">
-            <span
-              className="voices-mono text-3xl sm:text-4xl font-semibold text-[var(--ink)] tabular-nums"
-              style={{ letterSpacing: "-0.025em" }}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2
+              className="text-[13px] font-semibold text-[var(--ink)] bn-text"
+              style={{ fontFamily: "Hind Siliguri, sans-serif" }}
             >
-              {String(Math.floor(elapsed / 60)).padStart(2, "0")}:
-              {String(elapsed % 60).padStart(2, "0")}
-              <span className="voices-mono text-sm text-[var(--muted)] ml-1">/ 01:00</span>
-            </span>
-
-            {recording && (
-              <div className="flex gap-1 items-end h-7">
-                {[...Array(6)].map((_, i) => (
-                  <span
-                    key={i}
-                    className="wave-bar w-1 rounded-full"
-                    style={{ height: "100%", background: "var(--accent)" }}
-                  />
-                ))}
-              </div>
-            )}
+              2. {msgs.record.step2Title}
+            </h2>
+            <span className="voices-eyebrow">UP TO 60 SECONDS</span>
           </div>
 
           {/* Live transcript pane — voice-keyboard style */}
@@ -932,12 +793,12 @@ export function RecordFlow() {
                       ? msgs.record.transcriptPlaceholderCaptured
                       : msgs.record.transcriptPlaceholderReady
                 }
-                rows={5}
-                className="w-full resize-y bg-transparent text-[18px] sm:text-[19px] leading-relaxed bn-text text-[var(--ink)] placeholder:text-[var(--muted)] focus:outline-none p-0"
+                rows={4}
+                className="w-full resize-y bg-transparent text-[16px] leading-relaxed bn-text text-[var(--ink)] placeholder:text-[var(--muted)] focus:outline-none p-0"
                 style={{
                   fontFamily: "Hind Siliguri, Noto Sans Bengali, sans-serif",
-                  minHeight: 96,
-                  maxHeight: 280,
+                  minHeight: 90,
+                  maxHeight: 220,
                 }}
               />
             </div>
@@ -957,18 +818,43 @@ export function RecordFlow() {
 
           {/* Mic button — start ↔ pause ↔ resume. A separate end button stops
               the recorder and reveals preview + send. */}
-          <div className="flex flex-col items-center gap-3 pt-1">
+          <div className="rounded-[8px] bg-[var(--ink)] px-4 pt-4 pb-5 text-white">
+            <div className="mb-3 flex items-center justify-center gap-2">
+              {recording && !paused && <span className="h-1.5 w-1.5 rounded-full bg-[var(--live)]" />}
+              <span className="voices-mono text-[10px] text-white/70">
+                {recording && !paused ? "REC" : paused ? "PAUSED" : audioBlob ? "CAPTURED" : "READY"}
+              </span>
+              <span className="voices-mono text-[10px] text-white/70">
+                {String(Math.floor(elapsed / 60)).padStart(2, "0")}:
+                {String(elapsed % 60).padStart(2, "0")} / 1:00
+              </span>
+            </div>
+            <div className="mb-4 flex h-12 items-center justify-center gap-1">
+              {[...Array(34)].map((_, i) => (
+                <span
+                  key={i}
+                  className={recording && !paused ? "wave-bar" : ""}
+                  style={{
+                    width: 2,
+                    height: `${18 + ((i * 17) % 28)}px`,
+                    borderRadius: 999,
+                    background: "rgba(255,255,255,0.68)",
+                  }}
+                />
+              ))}
+            </div>
+            <div className="flex flex-col items-center gap-2">
             <button
               type="button"
               onClick={toggleRecording}
               disabled={elapsed >= 60 && !recording}
               className={clsx(
-                "w-20 h-20 rounded-full flex items-center justify-center select-none",
+                "w-16 h-16 rounded-full flex items-center justify-center select-none",
                 "transition-all duration-150",
                 "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]",
                 recording && !paused
-                  ? "bg-[var(--warn)] text-white shadow-[0_8px_32px_-8px_var(--warn)] animate-pulse"
-                  : "bg-[var(--accent)] text-white hover:bg-[var(--accent-deep)] active:scale-95 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5)]",
+                  ? "bg-white text-[var(--live)] animate-pulse"
+                  : "bg-white text-[var(--live)] hover:bg-[var(--surface-soft)] active:scale-95",
                 "disabled:opacity-40 disabled:cursor-not-allowed"
               )}
               aria-label={
@@ -982,16 +868,16 @@ export function RecordFlow() {
               {recording && !paused ? (
                 /* Pause icon — two vertical bars */
                 <span className="flex gap-1.5">
-                  <span className="w-1.5 h-7 rounded-[2px] bg-white" />
-                  <span className="w-1.5 h-7 rounded-[2px] bg-white" />
+                  <span className="w-1.5 h-7 rounded-[2px] bg-[var(--live)]" />
+                  <span className="w-1.5 h-7 rounded-[2px] bg-[var(--live)]" />
                 </span>
               ) : (
-                <Icon.Mic size={28} color="white" sw={1.8} />
+                <Icon.Mic size={26} color="var(--live)" sw={1.8} />
               )}
             </button>
 
             <p
-              className="text-sm font-semibold text-[var(--ink)] bn-text"
+              className="text-sm font-semibold text-white bn-text"
               style={{ fontFamily: "Hind Siliguri, sans-serif" }}
             >
               {!recording
@@ -1002,7 +888,7 @@ export function RecordFlow() {
                   ? msgs.record.tapResume
                   : msgs.record.tapPause}
             </p>
-            <p className="voices-eyebrow">{msgs.record.banglaHint}</p>
+            <p className="voices-eyebrow text-white/55">{msgs.record.banglaHint}</p>
 
             {recording && (
               <Btn
@@ -1010,12 +896,13 @@ export function RecordFlow() {
                 onClick={stopRecording}
                 size="md"
                 variant="warn"
-                className="mt-1"
+                className="mt-1 bg-white text-[var(--ink)] hover:bg-[var(--surface-soft)]"
               >
                 <span className="w-3 h-3 rounded-[2px] bg-current" aria-hidden="true" />
                 {msgs.record.stop}
               </Btn>
             )}
+            </div>
           </div>
 
           {/* Error banner */}

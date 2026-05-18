@@ -138,7 +138,7 @@ export function ActiveTopicPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto pb-16">
+    <div className="max-w-[430px] mx-auto pb-24">
       <TopicHero
         id={topic.id}
         week={topic.week}
@@ -152,18 +152,22 @@ export function ActiveTopicPage() {
         category={topic.category}
       />
 
-      <div className="px-4 sm:px-6 mb-4">
-        <span className="voices-eyebrow">{msgs.topic.clustersHeading}</span>
+      <div className="px-4 mb-3 flex items-center justify-between gap-3">
+        <span className="text-[11px] text-[var(--muted)]">
+          ↑ vote opinions you agree with
+        </span>
+        <span className="text-[11px] text-[var(--muted)]">
+          Sort: <strong className="text-[var(--ink)]">Top</strong>
+        </span>
       </div>
 
-      <div className="space-y-3 px-4 sm:px-6">
+      <div className="space-y-1.5 px-4">
         {topic.clusters.map((cluster, idx) => (
           <ClusterCard
             key={cluster.id}
             id={cluster.id}
             label={cluster.label}
             summary={cluster.summary}
-            image={idx < 4 ? cluster.image : null}
             upvotes={cluster.upvotes}
             downvotes={cluster.downvotes}
             takeCount={cluster.takeCount}
@@ -180,9 +184,13 @@ export function ActiveTopicPage() {
       </div>
 
       {topic.status === "live" && (
-        <div className="mt-10 px-4 sm:px-6 flex flex-col items-center gap-3">
-          <Link href={`/record?topicId=${topic.id}`}>
-            <Btn size="lg" variant="accent">
+        <div className="fixed left-0 right-0 bottom-16 z-40 flex justify-center pointer-events-none">
+          <Link href={`/record?topicId=${topic.id}`} className="pointer-events-auto">
+            <Btn
+              size="lg"
+              variant="accent"
+              className="min-w-44 rounded-[9px] border-2 border-[var(--ink)] shadow-[0_12px_26px_-12px_rgba(0,0,0,0.65)]"
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
                 <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
@@ -191,12 +199,6 @@ export function ActiveTopicPage() {
               </svg>
               {msgs.topic.addVoice}
             </Btn>
-          </Link>
-          <Link
-            href={`/results?topicId=${topic.id}`}
-            className="voices-eyebrow hover:text-[var(--ink)] transition-colors"
-          >
-            {msgs.topic.viewTally} →
           </Link>
         </div>
       )}

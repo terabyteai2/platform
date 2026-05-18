@@ -1,21 +1,19 @@
+import { ClusterIcon } from "@/components/ui/ClusterIcon";
+
 interface PctBarProps {
+  id?: string;
   label: string;
   pct: number;
   count: number;
-  image?: {
-    url: string;
-    alt: string;
-    color?: string | null;
-  } | null;
   featured?: boolean;
   rank?: number;
 }
 
-export function PctBar({ label, pct, count, image, featured, rank }: PctBarProps) {
+export function PctBar({ id, label, pct, count, featured, rank }: PctBarProps) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
           {typeof rank === "number" && (
             <span
               className="voices-mono text-[11px] font-semibold shrink-0"
@@ -24,24 +22,9 @@ export function PctBar({ label, pct, count, image, featured, rank }: PctBarProps
               {String(rank + 1).padStart(2, "0")}
             </span>
           )}
-          {image && (
-            <div
-              className="h-10 w-12 shrink-0 overflow-hidden rounded-[7px] border bg-[var(--surface-soft)]"
-              style={{
-                borderColor: "var(--hairline-soft)",
-                backgroundColor: image.color ?? "var(--surface-soft)",
-              }}
-            >
-              <img
-                src={image.url}
-                alt={image.alt}
-                className="h-full w-full object-cover"
-                loading="lazy"
-              />
-            </div>
-          )}
+          <ClusterIcon id={id ?? label} index={rank} size="sm" />
           <span
-            className="text-[15px] font-semibold text-[var(--ink)] leading-snug bn-text flex-1 min-w-0"
+            className="text-[14px] font-semibold text-[var(--ink)] leading-snug bn-text flex-1 min-w-0"
             style={{ fontFamily: "Hind Siliguri, sans-serif" }}
           >
             {label}
@@ -55,7 +38,7 @@ export function PctBar({ label, pct, count, image, featured, rank }: PctBarProps
             {count}
           </span>
           <span
-            className="voices-mono text-lg font-semibold w-14 text-right"
+            className="voices-mono text-base font-semibold w-12 text-right"
             style={{
               color: featured ? "var(--ink)" : "var(--ink-soft)",
               letterSpacing: "-0.02em",

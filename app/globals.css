@@ -2,48 +2,47 @@
 @import "tailwindcss";
 
 :root {
-  /* Editorial palette — warm paper, deliberative graphite */
-  --paper: #ece9e1;
-  --paper-deep: #e3dfd4;
+  /* Quora-inspired mobile palette: white canvas, black text, red primary. */
+  --paper: #ffffff;
+  --paper-deep: #f7f7f7;
   --surface: #ffffff;
-  --surface-soft: #f5f2ec;
-  --ink: #14110d;
-  --ink-soft: #3a342c;
-  --muted: #7a7163;
-  --hairline: #d8d2c4;
-  --hairline-soft: #e6e1d4;
+  --surface-soft: #f6f6f6;
+  --ink: #11100d;
+  --ink-soft: #3a3a3a;
+  --muted: #777777;
+  --hairline: #d7d7d7;
+  --hairline-soft: #eeeeee;
 
-  /* Accent — graphite tone (mockup default). Color marks meaning, not decoration. */
-  --accent: #1a1a1a;
-  --accent-deep: #000000;
-  --accent-soft: #ececec;
+  --accent: #b92b27;
+  --accent-deep: #8f1f1d;
+  --accent-soft: #f8e7e6;
 
   /* Signal */
-  --warn: #b85c1e;
-  --live: #c63b3b;
+  --warn: #b92b27;
+  --live: #b92b27;
 
   /* Radii */
   --r-sm: 6px;
-  --r: 10px;
-  --r-lg: 16px;
+  --r: 8px;
+  --r-lg: 8px;
   --r-pill: 999px;
 }
 
 @theme {
-  --color-paper: #ece9e1;
-  --color-paper-deep: #e3dfd4;
+  --color-paper: #ffffff;
+  --color-paper-deep: #f7f7f7;
   --color-surface: #ffffff;
-  --color-surface-soft: #f5f2ec;
+  --color-surface-soft: #f6f6f6;
   --color-ink: #14110d;
   --color-ink-soft: #3a342c;
-  --color-muted: #7a7163;
-  --color-hairline: #d8d2c4;
-  --color-hairline-soft: #e6e1d4;
-  --color-accent: #1a1a1a;
-  --color-accent-deep: #000000;
-  --color-accent-soft: #ececec;
-  --color-warn: #b85c1e;
-  --color-live: #c63b3b;
+  --color-muted: #777777;
+  --color-hairline: #d7d7d7;
+  --color-hairline-soft: #eeeeee;
+  --color-accent: #b92b27;
+  --color-accent-deep: #8f1f1d;
+  --color-accent-soft: #f8e7e6;
+  --color-warn: #b92b27;
+  --color-live: #b92b27;
   --font-bangla-sans: "Hind Siliguri", "Noto Sans Bengali", sans-serif;
   --font-bangla-serif: "Noto Serif Bengali", Georgia, serif;
   --font-latin: "Plus Jakarta Sans", system-ui, sans-serif;
@@ -69,6 +68,11 @@
     font-feature-settings: "ss01", "ss02";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
   }
 }
 
@@ -146,14 +150,14 @@ button, a {
   .voices-display {
     font-family: "Newsreader", "Noto Serif Bengali", Georgia, serif;
     font-weight: 500;
-    letter-spacing: -0.025em;
-    line-height: 1.05;
+    letter-spacing: 0;
+    line-height: 1.06;
   }
 
   .voices-display-bn {
     font-family: "Noto Serif Bengali", "Newsreader", Georgia, serif;
     font-weight: 600;
-    letter-spacing: -0.012em;
+    letter-spacing: 0;
     line-height: 1.2;
   }
 

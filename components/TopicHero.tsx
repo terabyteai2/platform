@@ -3,7 +3,6 @@
 import { useLocale } from "@/lib/locale-context";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
-import { Btn } from "@/components/ui/Btn";
 import { Pill } from "@/components/ui/Pill";
 
 interface TopicHeroProps {
@@ -35,7 +34,6 @@ export function TopicHero({
   image,
   closesAt,
   status,
-  totalTakes,
   category,
 }: TopicHeroProps) {
   const { locale, msgs } = useLocale();
@@ -49,11 +47,11 @@ export function TopicHero({
   const headlineClass = locale === "en" && questionEn ? "voices-display" : "voices-display-bn";
 
   return (
-    <section className="pt-12 pb-8 px-4 sm:px-6 max-w-3xl mx-auto">
+    <section className="pt-4 pb-3 px-4 max-w-[430px] mx-auto">
       {image && (
-        <figure className="mb-8">
+        <figure className="mb-3">
           <div
-            className="relative aspect-[16/9] overflow-hidden rounded-[10px] border bg-[var(--surface-soft)]"
+            className="relative aspect-[16/9] overflow-hidden rounded-[8px] border bg-[var(--surface-soft)]"
             style={{
               borderColor: "var(--hairline)",
               backgroundColor: image.color ?? "var(--surface-soft)",
@@ -66,37 +64,11 @@ export function TopicHero({
               loading="eager"
             />
           </div>
-          {image.source === "unsplash" && image.creditName && (
-            <figcaption className="mt-2 voices-eyebrow normal-case tracking-normal">
-              {msgs.topic.photoBy}{" "}
-              {image.creditUrl ? (
-                  <a
-                    href={image.creditUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
-                  >
-                    {image.creditName}
-                  </a>
-              ) : (
-                image.creditName
-              )}{" "}
-              on{" "}
-              <a
-                href="https://unsplash.com/?utm_source=voices_discussion_platform&utm_medium=referral"
-                target="_blank"
-                rel="noreferrer"
-                className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
-              >
-                Unsplash
-              </a>
-            </figcaption>
-          )}
         </figure>
       )}
 
       {/* Eyebrow row */}
-      <div className="flex items-center gap-2 mb-6 flex-wrap">
+      <div className="flex items-center gap-1.5 mb-2 flex-wrap">
         <Pill variant="default">
           {msgs.topic.week.toUpperCase()} {week.toString().padStart(2, "0")}
         </Pill>
@@ -112,7 +84,7 @@ export function TopicHero({
 
       {/* Headline */}
       <h1
-        className={`${headlineClass} text-4xl sm:text-5xl text-[var(--ink)] mb-5`}
+        className={`${headlineClass} text-[22px] sm:text-3xl text-[var(--ink)] mb-2`}
       >
         {headline}
       </h1>
@@ -120,7 +92,7 @@ export function TopicHero({
       {/* Context — set in italic Newsreader for English, in serif Bangla otherwise */}
       {context && (
         <p
-          className="text-[17px] sm:text-lg text-[var(--ink-soft)] leading-relaxed mb-7 max-w-2xl bn-text"
+          className="text-[13px] text-[var(--ink-soft)] leading-snug mb-3 max-w-2xl bn-text line-clamp-2"
           style={{
             fontFamily: locale === "en"
               ? "Newsreader, Georgia, serif"
@@ -134,38 +106,13 @@ export function TopicHero({
       )}
 
       {/* Decorative hairline */}
-      <hr className="voices-rule mb-5" />
-
-      {/* Stats + CTA row */}
-      <div className="flex items-end justify-between gap-6 flex-wrap">
-        <div className="flex items-baseline gap-3">
-          <span
-            className="voices-mono text-3xl sm:text-4xl font-semibold text-[var(--ink)]"
-            style={{ letterSpacing: "-0.02em" }}
-          >
-            {totalTakes.toLocaleString()}
-          </span>
-          <div className="flex flex-col leading-tight">
-            <span className="voices-eyebrow">{msgs.topic.totalVoices.toUpperCase()}</span>
-            <span className="text-[13px] text-[var(--muted)] mt-0.5">
-              {isClosed ? msgs.topic.closed : `${msgs.topic.closesAt} ${timeLeft}`}
-            </span>
-          </div>
-        </div>
-
-        {!isClosed && (
-          <Link href={`/record?topicId=${id}`}>
-            <Btn size="md" variant="accent">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                <line x1="12" y1="19" x2="12" y2="23" />
-                <line x1="8" y1="23" x2="16" y2="23" />
-              </svg>
-              {msgs.topic.addVoice}
-            </Btn>
-          </Link>
-        )}
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[11px] text-[var(--muted)]">
+          {isClosed ? msgs.topic.closed : `${timeLeft}`}
+        </span>
+        <Link href={`/results?topicId=${id}`} className="voices-eyebrow hover:text-[var(--ink)]">
+          {msgs.topic.viewTally}
+        </Link>
       </div>
     </section>
   );

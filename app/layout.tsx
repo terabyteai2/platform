@@ -32,9 +32,9 @@ export default function RootLayout({
         <LocaleProvider>
           <UserProvider>
             <Navbar />
-            <main className="flex-1">{children}</main>
+            <main className="flex-1 pb-16">{children}</main>
             <footer
-              className="mt-16 border-t"
+              className="hidden"
               style={{ borderColor: "var(--hairline)" }}
             >
               <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 flex items-center justify-between gap-4 flex-wrap">

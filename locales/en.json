@@ -9,8 +9,8 @@
   "topic": {
     "voices": "voices",
     "addVoice": "Add your voice",
-    "voteUp": "Agree",
-    "voteDown": "Disagree",
+    "voteUp": "Correct",
+    "voteDown": "Wrong",
     "totalVoices": "Total voices",
     "closesAt": "Closes",
     "closed": "Closed",

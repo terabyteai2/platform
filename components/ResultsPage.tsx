@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useLocale } from "@/lib/locale-context";
 import { PctBar } from "@/components/ui/PctBar";
 import { Pill } from "@/components/ui/Pill";
+import { ClusterIcon } from "@/components/ui/ClusterIcon";
 
 interface ClusterResult {
   id: string;
@@ -84,11 +85,11 @@ export function ResultsPage() {
   const topCluster = data.results[0];
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 pb-16">
+    <div className="max-w-[430px] mx-auto px-4 pt-4 pb-20">
       {/* Header */}
-      <div className="mb-10">
-        <div className="flex items-center gap-2 mb-5">
-          <Pill variant="default">RESULTS</Pill>
+      <div className="mb-5">
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <span className="voices-serif text-[18px] font-semibold text-[var(--ink)]">Results</span>
           {data.status === "live" ? (
             <Pill variant="live" icon={<span className="voices-live-dot" />}>LIVE</Pill>
           ) : (
@@ -96,37 +97,33 @@ export function ResultsPage() {
           )}
         </div>
 
-        <h1 className="voices-display text-4xl sm:text-5xl text-[var(--ink)] mb-6">
+        <span className="voices-eyebrow">WEEK 14 · {data.totalVoices.toLocaleString()} VOICES</span>
+        <h1 className="voices-display text-[22px] text-[var(--ink)] mt-2 mb-3">
           {msgs.results.title}
         </h1>
-
-        <hr className="voices-rule mb-5" />
-
-        <div className="flex items-baseline gap-3">
-          <span
-            className="voices-mono text-4xl sm:text-5xl font-semibold text-[var(--ink)]"
-            style={{ letterSpacing: "-0.025em" }}
-          >
-            {data.totalVoices.toLocaleString()}
-          </span>
-          <span className="voices-eyebrow">{msgs.results.totalVoices.toUpperCase()}</span>
+        <div className="inline-flex rounded-full bg-[var(--surface-soft)] p-0.5 border border-[var(--hairline)]">
+          <button className="rounded-full bg-[var(--ink)] px-3 py-1 text-[10px] font-semibold text-white voices-mono">
+            BY CLUSTER
+          </button>
+          <button className="rounded-full px-3 py-1 text-[10px] font-semibold text-[var(--muted)] voices-mono">
+            OVER TIME
+          </button>
+          <button className="rounded-full px-3 py-1 text-[10px] font-semibold text-[var(--muted)] voices-mono">
+            BY ROLE
+          </button>
         </div>
       </div>
 
       {/* Bar chart */}
-      <section className="mb-12">
-        <div className="mb-5 flex items-center justify-between">
-          <span className="voices-eyebrow">DISTRIBUTION</span>
-          <span className="voices-eyebrow">{data.results.length} CLUSTERS</span>
-        </div>
-        <div className="space-y-5">
+      <section className="mb-7">
+        <div className="space-y-3">
           {data.results.map((r, idx) => (
             <PctBar
               key={r.id}
+              id={r.id}
               label={r.label}
               pct={r.pct}
               count={r.takeCount}
-              image={idx < 4 ? r.image : null}
               featured={idx === 0}
               rank={idx}
             />
@@ -136,24 +133,24 @@ export function ResultsPage() {
 
       {/* Featured quote */}
       {topCluster?.featuredQuote && (
-        <section className="mb-12">
-          <div className="mb-4">
+        <section className="mb-7">
+          <div className="mb-3">
             <span className="voices-eyebrow">{msgs.results.featuredQuote.toUpperCase()}</span>
           </div>
-          <blockquote className="voices-card p-7 sm:p-8 relative">
+          <blockquote className="voices-card p-4 relative">
             <span
-              className="absolute -top-2 left-6 voices-serif text-6xl leading-none"
+              className="absolute -top-2 left-5 voices-serif text-5xl leading-none"
               style={{ color: "var(--accent)", fontWeight: 500 }}
             >
               &ldquo;
             </span>
             <p
-              className="voices-quote text-xl sm:text-2xl text-[var(--ink)] leading-relaxed bn-serif pl-6"
+              className="voices-quote text-lg sm:text-xl text-[var(--ink)] leading-relaxed bn-serif pl-5"
               style={{ fontFamily: "Noto Serif Bengali, Newsreader, Georgia, serif" }}
             >
               {topCluster.featuredQuote}
             </p>
-            <footer className="mt-4 pl-6 voices-eyebrow">
+            <footer className="mt-3 pl-5 voices-eyebrow">
               — {topCluster.label}
             </footer>
           </blockquote>
@@ -162,59 +159,16 @@ export function ResultsPage() {
 
       {/* Per-cluster summaries */}
       <section>
-        <div className="mb-5">
+        <div className="mb-3">
           <span className="voices-eyebrow">{msgs.results.byCluster.toUpperCase()}</span>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {data.results.map((r, idx) => (
-            <div key={r.id} className="voices-card p-5">
-              <div className="flex flex-col sm:flex-row gap-4">
-                {idx < 4 && r.image && (
-                  <figure className="sm:w-28 shrink-0">
-                    <div
-                      className="aspect-[4/3] overflow-hidden rounded-[8px] border bg-[var(--surface-soft)]"
-                      style={{
-                        borderColor: "var(--hairline-soft)",
-                        backgroundColor: r.image.color ?? "var(--surface-soft)",
-                      }}
-                    >
-                      <img
-                        src={r.image.url}
-                        alt={r.image.alt}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                    {r.image.source === "unsplash" && r.image.creditName && (
-                      <figcaption className="mt-1 voices-eyebrow normal-case tracking-normal leading-tight">
-                        Photo by{" "}
-                        {r.image.creditUrl ? (
-                          <a
-                            href={r.image.creditUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
-                          >
-                            {r.image.creditName}
-                          </a>
-                        ) : (
-                          r.image.creditName
-                        )}{" "}
-                        on{" "}
-                        <a
-                          href="https://unsplash.com/?utm_source=voices_discussion_platform&utm_medium=referral"
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline decoration-[var(--hairline)] underline-offset-2 hover:text-[var(--ink)]"
-                        >
-                          Unsplash
-                        </a>
-                      </figcaption>
-                    )}
-                  </figure>
-                )}
+            <div key={r.id} className="voices-card p-3">
+              <div className="flex gap-3">
+                <ClusterIcon id={r.id} index={idx} />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex items-start justify-between gap-3 mb-1">
                     <div className="flex items-baseline gap-3 flex-1 min-w-0">
                       <span
                         className="voices-mono text-[11px] font-semibold shrink-0"
@@ -238,14 +192,14 @@ export function ResultsPage() {
                   </div>
                   {r.summary && (
                     <p
-                      className="text-[13px] text-[var(--ink-soft)] leading-relaxed bn-text pl-7"
+                      className="text-[13px] text-[var(--ink-soft)] leading-snug bn-text pl-7 line-clamp-2"
                       style={{ fontFamily: "Hind Siliguri, sans-serif" }}
                     >
                       {r.summary}
                     </p>
                   )}
-                  <div className="mt-3 pl-7 voices-eyebrow">
-                    {r.takeCount} VOICES · ↑{r.upvotes} ↓{r.downvotes}
+                  <div className="mt-2 pl-7 voices-eyebrow normal-case tracking-normal">
+                    {r.takeCount} voices · পক্ষে {r.upvotes} · বিপক্ষে {r.downvotes}
                   </div>
                 </div>
               </div>

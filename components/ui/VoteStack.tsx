@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useCurrentUser } from "@/lib/user-context";
+import { Icon } from "@/components/ui/Icon";
 import clsx from "clsx";
 
 interface VoteStackProps {
@@ -11,6 +12,7 @@ interface VoteStackProps {
   userVote?: "up" | "down" | null;
   disabled?: boolean;
   onVote?: (clusterId: string, direction: "up" | "down") => Promise<void>;
+  showCount?: boolean;
 }
 
 export function VoteStack({
@@ -20,6 +22,7 @@ export function VoteStack({
   userVote,
   disabled,
   onVote,
+  showCount = true,
 }: VoteStackProps) {
   const { requireName } = useCurrentUser();
   const [localVote, setLocalVote] = useState<"up" | "down" | null>(userVote ?? null);
@@ -71,54 +74,50 @@ export function VoteStack({
     }
   }
 
-  const net = localUp - localDown;
-
   return (
-    <div className="flex flex-col items-stretch shrink-0 rounded-[10px] border overflow-hidden"
-      style={{ borderColor: "var(--hairline)", background: "var(--surface)" }}
+    <div
+      className="flex shrink-0 items-center overflow-hidden rounded-[7px] border bg-[var(--surface)]"
+      style={{ borderColor: "var(--ink)" }}
     >
       <button
         onClick={() => handleVote("up")}
         disabled={loading || disabled}
-        aria-label="একমত"
+        aria-label="সঠিক"
         className={clsx(
-          "flex items-center justify-center w-12 h-9 transition-colors",
+          "flex h-8 w-8 items-center justify-center transition-colors",
           localVote === "up"
             ? "bg-[var(--accent)] text-white"
-            : "text-[var(--ink-soft)] hover:bg-[var(--accent-soft)]",
+            : "text-[var(--ink)] hover:bg-[var(--accent-soft)]",
           "disabled:opacity-50 disabled:cursor-not-allowed"
         )}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <polyline points="6 15 12 9 18 15" />
-        </svg>
+        <Icon.ThumbsUp size={14} sw={2.1} />
       </button>
-      <div
-        className="flex items-center justify-center text-center px-2 py-1.5 voices-mono text-[13px] font-semibold border-y"
-        style={{
-          borderColor: "var(--hairline)",
-          color: net > 0 ? "var(--ink)" : net < 0 ? "var(--warn)" : "var(--muted)",
-          minWidth: 48,
-        }}
-        title={`↑${localUp} · ↓${localDown}`}
-      >
-        {net > 0 ? `+${net}` : net}
-      </div>
+      {showCount && (
+        <div
+          className="flex h-8 items-center justify-center border-x px-2 text-center"
+          style={{
+            borderColor: "var(--ink)",
+            color: "var(--ink)",
+          }}
+          title={`সঠিক ${localUp} · ভুল ${localDown}`}
+        >
+          <span className="voices-mono text-[11px] font-bold leading-tight">{localUp}</span>
+        </div>
+      )}
       <button
         onClick={() => handleVote("down")}
         disabled={loading || disabled}
-        aria-label="দ্বিমত"
+        aria-label="ভুল"
         className={clsx(
-          "flex items-center justify-center w-12 h-9 transition-colors",
+          "flex h-8 w-8 items-center justify-center transition-colors",
           localVote === "down"
             ? "bg-[var(--warn)] text-white"
-            : "text-[var(--ink-soft)] hover:bg-[var(--accent-soft)]",
+            : "text-[var(--ink)] hover:bg-[var(--accent-soft)]",
           "disabled:opacity-50 disabled:cursor-not-allowed"
         )}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        <Icon.ThumbsDown size={14} sw={2.1} />
       </button>
     </div>
   );

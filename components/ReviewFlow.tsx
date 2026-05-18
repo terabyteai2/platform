@@ -333,18 +333,30 @@ export function ReviewFlow() {
     content.trim() !== take.content.trim() &&
     !clusterManuallySelected;
   const inputBase =
-    "w-full p-4 rounded-[10px] border text-[15px] leading-relaxed bg-[var(--surface)] text-[var(--ink)] border-[var(--hairline)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 focus:ring-offset-[var(--paper)]";
+    "w-full p-3 rounded-[8px] border text-[14px] leading-relaxed bg-[var(--surface)] text-[var(--ink)] border-[var(--hairline)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 focus:ring-offset-[var(--paper)]";
 
   return (
-    <div className="max-w-xl mx-auto px-4 sm:px-6 pt-10 pb-16 space-y-8">
+    <div className="max-w-[430px] mx-auto px-4 pt-4 pb-20 space-y-5">
       <div>
+        <div className="mb-3 flex items-center justify-between">
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--ink)]"
+          >
+            <Icon.ArrowLeft size={13} sw={2.2} />
+            Re-record
+          </button>
+          <span className="voices-eyebrow">STEP 3 OF 3</span>
+        </div>
         <h1
-          className="voices-display-bn text-3xl sm:text-4xl text-[var(--ink)] bn-text"
+          className="voices-display-bn text-[22px] text-[var(--ink)] bn-text"
           style={{ fontFamily: "Noto Serif Bengali, Newsreader, Georgia, serif" }}
         >
           {msgs.review.title}
         </h1>
-        <hr className="voices-rule mt-5" />
+        <p className="mt-1 text-[12px] text-[var(--muted)]">
+          Edit the transcript if anything is off, then confirm where it belongs.
+        </p>
       </div>
 
       {/* Audio playback — so the user can hear themselves while editing */}
@@ -358,9 +370,10 @@ export function ReviewFlow() {
       )}
 
       {/* Transcript */}
-      <section className="space-y-3">
+      <section className="space-y-2">
         <div className="flex items-center justify-between gap-3">
           <span className="voices-eyebrow">{msgs.review.transcript.toUpperCase()}</span>
+          <button className="text-[11px] font-semibold text-[var(--ink)]">Edit</button>
           {take.asrConfidence != null && <ConfidenceChip confidence={take.asrConfidence} />}
         </div>
 
@@ -402,7 +415,7 @@ export function ReviewFlow() {
             setContent(e.target.value);
             setAiClusterError(null);
           }}
-          className={clsx(inputBase, "min-h-[140px] resize-y")}
+          className={clsx(inputBase, "min-h-[132px] resize-y")}
           style={{ fontFamily: "Hind Siliguri, Noto Sans Bengali, sans-serif" }}
           placeholder={msgs.review.editHint}
         />
@@ -411,12 +424,12 @@ export function ReviewFlow() {
   {/* Cluster selection */}
       <section className="space-y-3">
         <div className="flex items-center gap-2">
-          <span className="voices-eyebrow">{msgs.review.aiCluster.toUpperCase()}</span>
-          <Pill variant="ai" icon={<Icon.Sparkle size={10} color="#fff" sw={2.5} />}>AI</Pill>
+          <Pill variant="ai" icon={<Icon.Sparkle size={10} color="#fff" sw={2.5} />}>AI CLUSTERED</Pill>
+          <span className="voices-eyebrow normal-case tracking-normal">Sounds most like:</span>
         </div>
 
         <div
-          className="rounded-[10px] border px-3.5 py-3 text-[13px]"
+          className="rounded-[8px] border px-3 py-2.5 text-[13px]"
           style={{
             borderColor: aiClusterError ? "#f5d4c0" : "var(--hairline)",
             background: aiClusterError ? "#fff4ef" : "var(--surface)",
@@ -464,7 +477,7 @@ export function ReviewFlow() {
         </div>
 
         {!showNewCluster ? (
-          <div className="flex flex-wrap gap-2">
+          <div className="space-y-2">
             {clusters.map((c) => (
               <Pill
                 key={c.id}
@@ -483,7 +496,7 @@ export function ReviewFlow() {
                 setSelectedClusterId(null);
                 setClusterManuallySelected(true);
               }}
-              className="voices-eyebrow hover:text-[var(--ink)] transition-colors inline-flex items-center gap-1"
+              className="w-full rounded-[8px] border border-dashed border-[var(--muted)] px-3 py-2 text-left voices-eyebrow hover:text-[var(--ink)] transition-colors inline-flex items-center gap-1"
             >
               <Icon.Plus size={10} sw={2.4} />
               {msgs.review.newCluster.toUpperCase()}
@@ -511,7 +524,7 @@ export function ReviewFlow() {
       </section>
 
       {/* Identity — compact one-line layout */}
-      <section className="voices-card p-4 flex items-center justify-between gap-3 flex-wrap">
+      <section className="voices-card p-3 flex items-center justify-between gap-3 flex-wrap">
         <div className="min-w-0 flex-1">
           <span className="voices-eyebrow">{msgs.review.publishingAs}</span>
           <p
@@ -568,17 +581,21 @@ export function ReviewFlow() {
         </div>
       )}
 
-      <Btn
-        onClick={handleConfirm}
-        loading={submitting}
-        size="lg"
-        variant="accent"
-        fullWidth
-        disabled={!content.trim()}
-      >
-        {msgs.review.confirm}
-        <Icon.ArrowRight size={16} sw={2} />
-      </Btn>
+      <div className="grid grid-cols-[1fr_1.25fr] gap-2">
+        <Btn onClick={() => router.back()} size="md" variant="secondary">
+          Edit
+        </Btn>
+        <Btn
+          onClick={handleConfirm}
+          loading={submitting}
+          size="md"
+          variant="accent"
+          fullWidth
+          disabled={!content.trim()}
+        >
+          {msgs.review.confirm}
+        </Btn>
+      </div>
     </div>
   );
 }

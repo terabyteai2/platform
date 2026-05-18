@@ -9,8 +9,8 @@
   "topic": {
     "voices": "মতামত",
     "addVoice": "আপনার মত যোগ করুন",
-    "voteUp": "একমত",
-    "voteDown": "দ্বিমত",
+    "voteUp": "সঠিক",
+    "voteDown": "ভুল",
     "totalVoices": "মোট মতামত",
     "closesAt": "বন্ধ হবে",
     "closed": "বন্ধ হয়েছে",

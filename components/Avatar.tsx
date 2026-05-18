@@ -315,8 +315,8 @@ export function Avatar({ size = "md", readOnly = false, placement = "bottom" }: 
 
 export function FloatingAvatar() {
   return (
-    <div className="fixed right-4 bottom-4 sm:right-6 sm:bottom-6 z-[70]">
-      <Avatar size="lg" placement="top" />
+    <div className="fixed right-4 top-14 z-[70]">
+      <Avatar size="sm" placement="bottom" />
     </div>
   );
 }
